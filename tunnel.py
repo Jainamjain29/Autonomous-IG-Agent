@@ -1,7 +1,7 @@
 """Expose one local video file to Meta over an ngrok tunnel (PUBLISH_MODE=ngrok).
 
-Used by master_loop.publish_approved_video and scripts/publish_test.py:
-    httpd = start_file_server(path)             # serves ONLY that file, on 127.0.0.1
+Used by master_loop.publish_approved_video, scripts/publish_test.py and scripts/publish_inbox.py:
+    httpd = start_file_server(path)             # serves ONLY that file (or list), on 127.0.0.1
     url = open_tunnel(httpd.server_address[1])  # needs NGROK_AUTHTOKEN
     video_url = f"{url}/{url_name(path)}"
     check_public_url(video_url)                 # HEAD: 200 + video/mp4
@@ -48,41 +48,49 @@ def _content_type(path):
     return mimetypes.guess_type(path)[0] or "application/octet-stream"
 
 
-def start_file_server(path, port=0):
-    """Serves ONLY `path` at /<basename> on 127.0.0.1 in a background thread.
+def start_file_server(paths, port=0):
+    """Serves ONLY the given file(s), each at /<basename>, on 127.0.0.1 in a background thread.
 
-    Every other path gets a 404. port=0 picks a free port; read it back from
-    httpd.server_address[1]. Returns the server; shut it down with stop().
+    `paths` is one path or a list (one tunnel for a whole batch). Every other URL gets a
+    404, as does a listed file once it has been moved away. port=0 picks a free port;
+    read it back from httpd.server_address[1]. Returns the server; shut it down with stop().
     """
-    if not os.path.isfile(path):
-        raise TunnelError(f"Video file not found: {path}")
-    path = os.path.abspath(path)
-    served = "/" + url_name(path)
-    content_type = _content_type(path)
+    if isinstance(paths, (str, os.PathLike)):
+        paths = [paths]
+    served = {}
+    for path in paths:
+        if not os.path.isfile(path):
+            raise TunnelError(f"Video file not found: {path}")
+        name = "/" + url_name(path)
+        if name in served:
+            raise TunnelError(f"Two files would be served at the same URL: {name}")
+        served[name] = os.path.abspath(path)
 
-    class SingleFileHandler(http.server.BaseHTTPRequestHandler):
+    class FileListHandler(http.server.BaseHTTPRequestHandler):
         def _send_headers(self):
-            if urllib.parse.urlsplit(self.path).path != served:
+            path = served.get(urllib.parse.urlsplit(self.path).path)
+            if path is None or not os.path.isfile(path):
                 self.send_error(404)
-                return False
+                return None
             self.send_response(200)
-            self.send_header("Content-Type", content_type)
+            self.send_header("Content-Type", _content_type(path))
             self.send_header("Content-Length", str(os.path.getsize(path)))
             self.end_headers()
-            return True
+            return path
 
         def do_HEAD(self):
             self._send_headers()
 
         def do_GET(self):
-            if self._send_headers():
+            path = self._send_headers()
+            if path:
                 with open(path, "rb") as f:
                     shutil.copyfileobj(f, self.wfile)
 
         def log_message(self, fmt, *args):
             _log(f"{self.address_string()} {fmt % args}")
 
-    httpd = http.server.ThreadingHTTPServer(("127.0.0.1", port), SingleFileHandler)
+    httpd = http.server.ThreadingHTTPServer(("127.0.0.1", port), FileListHandler)
     httpd.daemon_threads = True
     threading.Thread(target=httpd.serve_forever, daemon=True).start()
     return httpd

@@ -114,6 +114,14 @@ Sources:
 - **`ig_service.py`:** `publish_reel` gains `publish=False` for dry runs. `publish_reel_local` raises on graph.instagram.com, telling the user to set `PUBLISH_MODE=ngrok`.
 - **`master_loop.py`:** uses the same helpers, so it too serves only the final video and HEAD-checks the URL.
 
+## Phase 6: inbox folder flow
+
+- **`scripts/publish_inbox.py`:** publishes the `.mp4` files in `workspace/inbox/` (created if missing). Caption comes from a sidecar `<name>.txt`; if missing, it asks and saves what you type (empty = skip).
+- **Approval gate:** lists pending videos with size and caption, then y/n/q per video. Only `y` publishes. `q` stops reviewing (like `git add -p`: earlier `y` answers still publish). Closed stdin counts as `q`.
+- **Batch:** credentials checked once; in ngrok mode ONE tunnel serves only the approved videos (`tunnel.start_file_server` now takes a list), each URL is HEAD-checked, and the tunnel is torn down in `finally`. A failure on one video is recorded and the batch continues.
+- **Filing:** success → `inbox/posted/` with `<name>.json` (media ID, caption, timestamp). Failure → `inbox/failed/` with `<name>.json` (step, error, API response, `may_have_published`). Name clashes get a timestamp suffix. A batch-wide setup failure (credentials, tunnel) moves nothing.
+- **`--dry-run`:** containers are created and polled, never published; nothing is moved.
+
 ## Out of scope, noticed while reading
 
 Both were approved and fixed in Phase 1 (see Decisions above).
