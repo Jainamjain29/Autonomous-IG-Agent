@@ -8,3 +8,4 @@ workspace/
 *.mp3
 *.srt
 .env
+*.exe

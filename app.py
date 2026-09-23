@@ -130,9 +130,14 @@ with tab2:
 
 with tab3:
     st.header("System Configuration")
-    saved_gemini = db.get_setting("GEMINI_API_KEY")
-    saved_meta = db.get_setting("META_GRAPH_API_KEY")
-    saved_ig = db.get_setting("IG_ACCOUNT_ID")
+    # Pre-fill from SQLite only, so saving the form never copies .env secrets into the database.
+    saved_gemini = db.get_stored_setting("GEMINI_API_KEY")
+    saved_meta = db.get_stored_setting("META_GRAPH_API_KEY")
+    saved_ig = db.get_stored_setting("IG_ACCOUNT_ID")
+
+    env_overrides = [k for k in ("GEMINI_API_KEY", "META_GRAPH_API_KEY", "IG_ACCOUNT_ID") if db.setting_source(k) == ".env"]
+    if env_overrides:
+        st.info(f"Set in .env (takes priority over values saved here): {', '.join(env_overrides)}")
     
     with st.form("settings_form"):
         gemini_key = st.text_input("Gemini API Key", value=saved_gemini, type="password")

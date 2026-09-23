@@ -1,1 +1,19 @@
+# Dashboard
 streamlit==1.32.0
+
+# Instagram Graph API publishing
+requests
+pyngrok
+python-dotenv
+
+# AI (agent_brain.py, assembly_line.py)
+# TODO: pin grpcio and google-generativeai to the known-working versions (to be supplied)
+google-generativeai
+openai-whisper
+
+# Media assembly (edge-tts is invoked as a CLI by assembly_line.py)
+imageio-ffmpeg
+edge-tts
+
+# Browser automation (flow_automator.py) - run `playwright install chromium` after pip install
+playwright

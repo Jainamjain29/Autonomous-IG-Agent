@@ -20,6 +20,7 @@ TEMP_CLIP = os.path.join(WORKSPACE, "dummy_clip.mp4")
 def generate_full_pipeline(topic=None, character=None, script=None, character_image_bytes=None, enable_upscale=False):
     """Runs the AI Brain and Video Assembly up to the Human Review stage."""
     print("🚀 STARTING AUTONOMOUS PIPELINE...")
+    os.makedirs(WORKSPACE, exist_ok=True)
     
     char_img_path = None
     if character_image_bytes:
@@ -79,7 +80,7 @@ def generate_full_pipeline(topic=None, character=None, script=None, character_im
     srt_path = os.path.join(WORKSPACE, "subs.srt")
     
     assembly_line.generate_voiceover(script_text, audio_path)
-    assembly_line.generate_subtitles(audio_path, "subs.srt")
+    assembly_line.generate_subtitles(audio_path, srt_path)
     assembly_line.assemble_final_video(merged_visuals, audio_path, srt_path, FINAL_REEL)
     
     # Cleanup individual scene clips
