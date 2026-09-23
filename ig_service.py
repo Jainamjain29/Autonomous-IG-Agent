@@ -3,6 +3,7 @@
 Reel publishing follows Meta's content publishing flow:
   1. POST /{ig_user_id}/media          -> create a REELS container
   2. (resumable only) POST to rupload   -> send the local file bytes
+     (ngrok mode instead passes a public video_url in step 1 and skips this)
   3. GET /{container_id}                -> poll status_code until FINISHED
   4. POST /{ig_user_id}/media_publish   -> publish the container
 Docs: https://developers.facebook.com/docs/instagram-platform/content-publishing/
@@ -264,18 +265,30 @@ def publish_container(container_id):
     return result["id"]
 
 
-def publish_reel_local(path, caption, publish=True):
-    """Publishes a local video file as a Reel using resumable upload.
-
-    Returns the IG media ID, or the container ID if publish=False (dry run).
-    """
+def check_video_file(path):
+    """Raises IGPublishError unless `path` is a file of 1 byte to 300 MB."""
     if not os.path.isfile(path):
         raise IGPublishError(f"Video file not found: {path}")
     file_size = os.path.getsize(path)
     if file_size == 0 or file_size > MAX_REEL_BYTES:
         raise IGPublishError(f"Video must be between 1 byte and 300 MB, got {file_size} bytes")
 
+
+def publish_reel_local(path, caption, publish=True):
+    """Publishes a local video file as a Reel using resumable upload.
+
+    Returns the IG media ID, or the container ID if publish=False (dry run).
+    Not available on graph.instagram.com (Instagram Login); use PUBLISH_MODE=ngrok there.
+    """
+    check_video_file(path)
+
     host, version, _ = get_config()
+    if host == "graph.instagram.com":
+        # Confirmed by a dry run: Meta answers upload_type=resumable with
+        # "The parameter video_url is required" (code 100).
+        raise IGPublishError(
+            "Resumable upload is not supported on graph.instagram.com (Instagram Login). "
+            "Set PUBLISH_MODE=ngrok in .env to publish via a public video URL instead.")
     if host != "graph.facebook.com":
         _log(f"WARNING: resumable upload is only documented for graph.facebook.com, not {host}. "
              "If it fails, set PUBLISH_MODE=ngrok.")
@@ -298,12 +311,21 @@ def publish_reel_local(path, caption, publish=True):
     return _step("publish", publish_container, container_id)
 
 
-def publish_reel(video_url, caption):
-    """Publishes a Reel from a publicly reachable URL (the ngrok fallback). Returns the IG media ID."""
+def publish_reel(video_url, caption, publish=True):
+    """Publishes a Reel from a publicly reachable URL (the ngrok path).
+
+    Returns the IG media ID, or the container ID if publish=False (dry run).
+    The URL must stay reachable until polling finishes, since Meta fetches it then.
+    """
     container = _step("container", _create_container,
                       {"media_type": "REELS", "video_url": video_url, "caption": caption})
-    _step("poll", wait_for_container, container["id"])
-    return _step("publish", publish_container, container["id"])
+    container_id = container["id"]
+    _step("poll", wait_for_container, container_id)
+
+    if not publish:
+        _log(f"Dry run: container {container_id} is FINISHED; skipping media_publish")
+        return container_id
+    return _step("publish", publish_container, container_id)
 
 
 def get_recent_analytics():

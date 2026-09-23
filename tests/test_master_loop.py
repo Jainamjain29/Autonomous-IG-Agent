@@ -12,7 +12,6 @@ import sys
 import tempfile
 import types
 import unittest
-import urllib.request
 from unittest import mock
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -26,10 +25,12 @@ sys.modules["agent_brain"] = mock.MagicMock()
 sys.modules["assembly_line"] = mock.MagicMock()
 _pyngrok = types.ModuleType("pyngrok")
 _pyngrok.ngrok = mock.MagicMock()
+_pyngrok.conf = mock.MagicMock()
 sys.modules["pyngrok"] = _pyngrok
 
 import ig_service
 import master_loop
+import tunnel
 
 ngrok = _pyngrok.ngrok
 
@@ -37,6 +38,11 @@ ngrok = _pyngrok.ngrok
 class PublishApprovedVideoTest(unittest.TestCase):
     def setUp(self):
         ngrok.reset_mock(return_value=True, side_effect=True)
+        # tunnel may have been imported with the real pyngrok by another test module.
+        for name, value in [("ngrok", ngrok), ("conf", _pyngrok.conf)]:
+            p = mock.patch.object(tunnel, name, value)
+            p.start()
+            self.addCleanup(p.stop)
         self.workspace = tempfile.mkdtemp(dir=_tmp_dir)
         self.video = os.path.join(self.workspace, "final_reel.mp4")
         self.plan = os.path.join(self.workspace, "current_video_plan.json")
@@ -50,7 +56,8 @@ class PublishApprovedVideoTest(unittest.TestCase):
             p.start()
             self.addCleanup(p.stop)
 
-        self.settings = {"PUBLISH_MODE": "resumable", "META_ACCESS_TOKEN": "TOK", "IG_USER_ID": "1784"}
+        self.settings = {"PUBLISH_MODE": "resumable", "META_ACCESS_TOKEN": "TOK", "IG_USER_ID": "1784",
+                         "NGROK_AUTHTOKEN": "ngtok"}
         p = mock.patch.object(ig_service.db, "get_setting",
                               side_effect=lambda k: self.settings.get(k) or db.get_stored_setting(k))
         p.start()
@@ -124,31 +131,64 @@ class PublishApprovedVideoTest(unittest.TestCase):
 
     # --- ngrok mode ---
 
-    def test_ngrok_success_shuts_down_server_and_tunnel(self):
+    def ngrok_mode(self):
         self.settings["PUBLISH_MODE"] = "ngrok"
         ngrok.connect.return_value.public_url = "https://abc.ngrok.app"
-        httpd = mock.MagicMock()
-        with mock.patch.object(master_loop, "start_file_server", return_value=httpd), \
-             mock.patch.object(ig_service, "publish_reel", return_value="M2") as publish:
-            self.assertEqual(master_loop.publish_approved_video(), "M2")
-        publish.assert_called_once_with("https://abc.ngrok.app/final_reel.mp4", "Hello\n\n#a #b")
+        httpd = mock.MagicMock(server_address=("127.0.0.1", 5555))
+        start = mock.patch.object(tunnel, "start_file_server", return_value=httpd)
+        check = mock.patch.object(tunnel, "check_public_url")
+        self.start_file_server, self.check_public_url = start.start(), check.start()
+        self.addCleanup(start.stop)
+        self.addCleanup(check.stop)
+        return httpd
+
+    def assert_torn_down(self, httpd):
         httpd.shutdown.assert_called_once()
         httpd.server_close.assert_called_once()
         ngrok.kill.assert_called_once()
+
+    def test_ngrok_success_serves_only_the_reel_and_cleans_up(self):
+        httpd = self.ngrok_mode()
+        with mock.patch.object(ig_service, "publish_reel", return_value="M2") as publish:
+            self.assertEqual(master_loop.publish_approved_video(), "M2")
+        self.start_file_server.assert_called_once_with(self.video)
+        ngrok.connect.assert_called_once_with(5555, "http")
+        self.assertEqual(_pyngrok.conf.get_default.return_value.auth_token, "ngtok")
+        self.check_public_url.assert_called_once_with("https://abc.ngrok.app/final_reel.mp4")
+        publish.assert_called_once_with("https://abc.ngrok.app/final_reel.mp4", "Hello\n\n#a #b")
+        self.assert_torn_down(httpd)
         self.assertEqual(self.state(), "IDLE")
 
     def test_ngrok_tunnel_failure_still_cleans_up(self):
-        self.settings["PUBLISH_MODE"] = "ngrok"
-        ngrok.connect.side_effect = RuntimeError("ngrok auth token missing")
-        httpd = mock.MagicMock()
-        with mock.patch.object(master_loop, "start_file_server", return_value=httpd):
-            with self.assertRaises(RuntimeError):
-                master_loop.publish_approved_video()
-        httpd.shutdown.assert_called_once()
-        httpd.server_close.assert_called_once()
-        ngrok.kill.assert_called_once()
+        httpd = self.ngrok_mode()
+        ngrok.connect.side_effect = RuntimeError("ngrok auth failed")
+        with self.assertRaises(tunnel.TunnelError):
+            master_loop.publish_approved_video()
+        self.assert_torn_down(httpd)
         self.assertEqual(self.state(), "FAILED")
-        self.assertIn("ngrok auth token missing", self.last_error())
+        self.assertEqual(db.get_stored_setting("LAST_ERROR_STEP"), "tunnel")
+        self.assertIn("ngrok auth failed", self.last_error())
+
+    def test_ngrok_missing_authtoken_ends_failed(self):
+        httpd = self.ngrok_mode()
+        del self.settings["NGROK_AUTHTOKEN"]
+        with mock.patch.object(ig_service, "publish_reel") as publish:
+            with self.assertRaises(tunnel.TunnelError):
+                master_loop.publish_approved_video()
+        publish.assert_not_called()
+        ngrok.connect.assert_not_called()
+        self.assert_torn_down(httpd)
+        self.assertIn("NGROK_AUTHTOKEN is not set", self.last_error())
+
+    def test_ngrok_head_check_failure_creates_no_container(self):
+        httpd = self.ngrok_mode()
+        self.check_public_url.side_effect = tunnel.TunnelError("Public URL check failed: HTTP 404")
+        with mock.patch.object(ig_service, "publish_reel") as publish:
+            with self.assertRaises(tunnel.TunnelError):
+                master_loop.publish_approved_video()
+        publish.assert_not_called()
+        self.assert_torn_down(httpd)
+        self.assertEqual(self.state(), "FAILED")
 
     def test_invalid_publish_mode_ends_failed(self):
         self.settings["PUBLISH_MODE"] = "bogus"
@@ -270,19 +310,6 @@ class PublishApprovedVideoTest(unittest.TestCase):
             out.flush()
         with open(master_loop.__file__, encoding="utf-8") as f:
             self.assertTrue(f.read().isascii(), "master_loop.py should contain no emoji")
-
-    # --- file server ---
-
-    def test_file_server_serves_workspace_and_shuts_down(self):
-        httpd = master_loop.start_file_server(0)  # port 0 = any free port
-        try:
-            port = httpd.server_address[1]
-            with urllib.request.urlopen(f"http://127.0.0.1:{port}/final_reel.mp4", timeout=5) as r:
-                self.assertEqual(len(r.read()), 1024)
-        finally:
-            httpd.shutdown()
-            httpd.server_close()
-        self.assertEqual(httpd.socket.fileno(), -1)  # socket closed
 
 
 if __name__ == "__main__":

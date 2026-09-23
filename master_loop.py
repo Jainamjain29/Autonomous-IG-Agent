@@ -1,16 +1,13 @@
 import os
 import json
 import time
-import threading
-import http.server
-import socketserver
-from pyngrok import ngrok
 import database as db
 
 # Import our modules
 import agent_brain
 import assembly_line
 import ig_service
+import tunnel
 
 WORKSPACE = os.path.join(os.getcwd(), "workspace")
 PLAN_PATH = os.path.join(WORKSPACE, "current_video_plan.json")
@@ -109,19 +106,11 @@ def process_uploaded_video(video_bytes):
     print("[upload] ANALYSIS COMPLETE. WAITING FOR HUMAN APPROVAL.")
     return True
 
-def start_file_server(port):
-    """Serves the workspace directory over HTTP in a background thread. Returns the server."""
-    import functools
-    handler = functools.partial(http.server.SimpleHTTPRequestHandler, directory=WORKSPACE)
-    httpd = socketserver.TCPServer(("", port), handler)
-    threading.Thread(target=httpd.serve_forever, daemon=True).start()
-    return httpd
-
 def publish_approved_video():
     """Publishes the approved Reel to Instagram. Only valid from PENDING_REVIEW.
 
     PUBLISH_MODE=resumable uploads the local file directly; PUBLISH_MODE=ngrok exposes
-    the workspace via a tunnel and lets Meta fetch it. Whatever happens, ngrok and the
+    only the final video via an ngrok tunnel and lets Meta fetch it. Whatever happens, ngrok and the
     file server are shut down, and the state ends as IDLE (success, media ID stored in
     LAST_MEDIA_ID) or FAILED (error stored in LAST_ERROR, failing step in LAST_ERROR_STEP).
     Errors are re-raised to the caller.
@@ -149,12 +138,12 @@ def publish_approved_video():
         if mode == "resumable":
             media_id = ig_service.publish_reel_local(FINAL_REEL, caption)
         else:
-            PORT = 8000
-            httpd = start_file_server(PORT)
-            print("[publish] Opening secure tunnel to local workspace...")
-            public_url = ngrok.connect(PORT).public_url
-            video_url = f"{public_url}/final_reel.mp4"
-            print(f"[publish] Public URL ready: {video_url}")
+            httpd = tunnel.start_file_server(FINAL_REEL)
+            print("[publish] Opening ngrok tunnel to the final video...")
+            public_url = tunnel.open_tunnel(httpd.server_address[1])
+            video_url = f"{public_url}/{tunnel.url_name(FINAL_REEL)}"
+            print(f"[publish] Public URL: {video_url}")
+            tunnel.check_public_url(video_url)
             media_id = ig_service.publish_reel(video_url, caption)
 
         succeeded = True
@@ -162,7 +151,8 @@ def publish_approved_video():
         print(f"[publish] PUBLISH SUCCESSFUL! IG Media ID: {media_id}")
         return media_id
     except BaseException as e:
-        # "setup" = failed before the first Graph API step (missing file, bad plan, ngrok, ...).
+        # "setup" = failed before the first Graph API step (missing file, bad plan, ...);
+        # "tunnel" = the ngrok file server, tunnel or public URL check failed.
         step = getattr(e, "step", None) or "setup"
         message = f"Failed at step: {step}\n{type(e).__name__}: {e}"
         response = getattr(e, "response_json", None)
@@ -173,13 +163,7 @@ def publish_approved_video():
         print(f"[publish] FAILED at step {step}: {type(e).__name__}: {e}")
         raise
     finally:
-        try:
-            ngrok.kill()
-        except Exception as e:
-            print(f"[publish] WARNING: ngrok cleanup failed: {e}")
-        if httpd is not None:
-            httpd.shutdown()
-            httpd.server_close()
+        tunnel.stop(httpd)
         # Note: if the dashboard was reset while this publish was running, this overwrites
         # that reset. Acceptable for a single-user tool; the final state reflects the outcome.
         db.save_setting("WORKFLOW_STATE", "IDLE" if succeeded else "FAILED")

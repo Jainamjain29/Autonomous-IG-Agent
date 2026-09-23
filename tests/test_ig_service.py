@@ -161,11 +161,15 @@ class IGServiceTest(unittest.TestCase):
             lambda: ig.publish_reel_local(self.video, "cap"))
 
     def test_missing_uri_builds_documented_upload_url(self):
-        self.settings["GRAPH_HOST"] = "graph.instagram.com"
         self.run_script([ok({"id": "C3"}), UPLOADED, FINISHED, PUBLISHED],
                         lambda: ig.publish_reel_local(self.video, "cap"))
-        self.assertEqual(self.calls[0][1], "https://graph.instagram.com/v26.0/1784/media")
+        self.assertEqual(self.calls[0][1], "https://graph.facebook.com/v26.0/1784/media")
         self.assertEqual(self.calls[1][1], "https://rupload.facebook.com/ig-api-upload/v26.0/C3")
+
+    def test_resumable_on_instagram_host_refuses_before_any_request(self):
+        self.settings["GRAPH_HOST"] = "graph.instagram.com"
+        self.assert_raises_ig("Set PUBLISH_MODE=ngrok", [], lambda: ig.publish_reel_local(self.video, "cap"))
+        self.assertEqual(self.calls, [])
 
     def test_errors_are_tagged_with_failing_step(self):
         bad = FakeResponse(400, {"error": {"message": "Bad request"}})
@@ -252,6 +256,18 @@ class IGServiceTest(unittest.TestCase):
         data = self.calls[0][2]["data"]
         self.assertEqual(data["video_url"], "https://x.ngrok.app/final_reel.mp4")
         self.assertNotIn("upload_type", data)
+
+    def test_ngrok_publish_dry_run_skips_media_publish(self):
+        container_id = self.run_script([ok({"id": "C2"}), FINISHED],
+                                       lambda: ig.publish_reel("https://x.ngrok.app/r.mp4", "cap", publish=False))
+        self.assertEqual(container_id, "C2")
+        self.assertFalse(any("media_publish" in c[1] for c in self.calls))
+
+    def test_ngrok_publish_works_on_instagram_host(self):
+        self.settings["GRAPH_HOST"] = "graph.instagram.com"
+        self.assertEqual(self.run_script([ok({"id": "C2"}), FINISHED, PUBLISHED],
+                                         lambda: ig.publish_reel("https://x.ngrok.app/r.mp4", "cap")), "M1")
+        self.assertEqual(self.calls[0][1], "https://graph.instagram.com/v26.0/1784/media")
 
     # --- credentials, config, analytics ---
 

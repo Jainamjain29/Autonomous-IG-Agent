@@ -3,7 +3,9 @@
 Goal: publish ONE Reel to Instagram reliably.
 Out of bounds: `flow_automator.py`, `assembly_line.py`, `agent_brain.py` are not modified.
 
-Status: plan approved. Phase 1 committed; Phase 2 in progress. Each phase stops for review before the next begins.
+Status: Phases 1–3 committed (`f23a526`, `ac643ee`, `8d9c9cc`). Phase 4 implemented; Phase 5 (ngrok path for Instagram Login) implemented, awaiting review. Each phase stops for review before the next begins.
+
+Tests: `python -m unittest discover -s tests` (offline; the Graph API is faked).
 
 ## Decisions (approved 2026-09-23)
 
@@ -14,6 +16,7 @@ Status: plan approved. Phase 1 committed; Phase 2 in progress. Each phase stops 
 ## Later (not part of this plan)
 
 - Set up a uv venv on Python 3.11 before running the full pipeline. Phase 1 was only checked with the system Python 3.13.
+- **TODO: replace ngrok with S3 presigned URLs (`PUBLISH_MODE=s3`).** Upload the video to S3, pass a short-lived presigned GET URL as `video_url`, delete the object after publishing. ngrok is a stopgap: it needs this machine online for the whole container processing time and depends on a free-tier tunnel. The `tunnel.py` interface (start, public URL, HEAD check, stop) is the seam to swap out.
 
 ## What the docs say (checked 2026-09-23)
 
@@ -23,7 +26,7 @@ Status: plan approved. Phase 1 committed; Phase 2 in progress. Each phase stops 
   2. `POST {uri}` with headers `Authorization: OAuth <token>`, `offset: 0` and `file_size: <bytes>`, and the raw file bytes as the body.
   3. `GET /{id}?fields=status_code,status`. Possible values: `IN_PROGRESS`, `FINISHED`, `ERROR`, `EXPIRED`, `PUBLISHED`. On `ERROR`, `status` holds the error subcode.
   4. `POST /{ig_user_id}/media_publish` with `creation_id`.
-- **Watch out:** the docs only describe resumable upload for **Facebook Login (graph.facebook.com)**. With `GRAPH_HOST=graph.instagram.com`, the code prints a warning and still tries, using the `uri` Meta returns rather than building one. If Meta rejects it, `PUBLISH_MODE=ngrok` is the fallback.
+- **Confirmed (dry run, 2026-09-24):** resumable upload does **not** work on **Instagram Login (graph.instagram.com)**. Meta rejects `upload_type=resumable` with `"The parameter video_url is required"` (code 100). `publish_reel_local` now refuses graph.instagram.com up front and tells the user to set `PUBLISH_MODE=ngrok`.
 - **Limits:**
   - Reels must be 3 s to 15 min, at most 300 MB, H.264/HEVC, 23–60 fps.
   - Unpublished containers expire after 24 h.
@@ -99,6 +102,17 @@ Sources:
   - Exits 1 on `IGPublishError` and prints the details.
   - Does not touch the Streamlit workflow state.
 - **Dry-run side effect:** a dry run leaves an unpublished container behind. Meta expires it after 24 h, so it is harmless.
+
+## Phase 5: ngrok path for Instagram Login
+
+- **`tunnel.py` (new):** shared by `master_loop` and `scripts/publish_test.py`, so the script does not import the heavy pipeline modules.
+  - `start_file_server(path)` serves ONLY that file at `/<basename>` on 127.0.0.1 (free port); everything else is a 404.
+  - `open_tunnel(port)` reads `NGROK_AUTHTOKEN` (from `.env`), sets it on pyngrok's in-memory config and connects. Missing or `<bracketed>` token → clear `TunnelError`.
+  - `check_public_url(url)` HEAD-checks the public URL (200 + `video/mp4`, 3 attempts) before any container is created.
+  - `stop(httpd)` kills ngrok and closes the server; never raises.
+- **`scripts/publish_test.py`:** honours `PUBLISH_MODE`. In ngrok mode it starts the server and tunnel, logs the public URL, HEAD-checks it, then calls `publish_reel(video_url, ..., publish=not dry_run)`. `--dry-run` still stops after polling. Tunnel and server are torn down in `finally`. Tunnel failures report step `tunnel`.
+- **`ig_service.py`:** `publish_reel` gains `publish=False` for dry runs. `publish_reel_local` raises on graph.instagram.com, telling the user to set `PUBLISH_MODE=ngrok`.
+- **`master_loop.py`:** uses the same helpers, so it too serves only the final video and HEAD-checks the URL.
 
 ## Out of scope, noticed while reading
 
