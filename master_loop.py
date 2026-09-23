@@ -19,7 +19,7 @@ TEMP_CLIP = os.path.join(WORKSPACE, "dummy_clip.mp4")
 
 def generate_full_pipeline(topic=None, character=None, script=None, character_image_bytes=None, enable_upscale=False):
     """Runs the AI Brain and Video Assembly up to the Human Review stage."""
-    print("🚀 STARTING AUTONOMOUS PIPELINE...")
+    print("[pipeline] STARTING AUTONOMOUS PIPELINE...")
     os.makedirs(WORKSPACE, exist_ok=True)
     
     char_img_path = None
@@ -35,7 +35,7 @@ def generate_full_pipeline(topic=None, character=None, script=None, character_im
     
     # 2. Flow Generation via Playwright
     db.save_setting("WORKFLOW_STATE", "GENERATING_VISUALS")
-    print(f"🎬 [Automator] Launching Browser Automation to generate {len(plan['scenes'])} visual scenes...")
+    print(f"[automator] Launching Browser Automation to generate {len(plan['scenes'])} visual scenes...")
     
     import subprocess
     import flow_automator
@@ -59,14 +59,14 @@ def generate_full_pipeline(topic=None, character=None, script=None, character_im
             
             # Optional: Upscale individual scene right after generation to save peak memory
             if enable_upscale:
-                print(f"✨ Upscaling scene {i}...")
+                print(f"[upscale] Upscaling scene {i}...")
                 upscaled_clip = os.path.join(WORKSPACE, f"scene_{i}_upscaled.mp4")
                 assembly_line.upscale_video(clip_path, upscaled_clip)
                 # Replace original with upscaled
                 os.replace(upscaled_clip, clip_path)
                 
         except Exception as e:
-            print(f"❌ Automation failed for scene {i}: {e}. Falling back to FFmpeg dummy clip.")
+            print(f"[automator] ERROR: Automation failed for scene {i}: {e}. Falling back to FFmpeg dummy clip.")
             color = "blue" if i % 2 == 0 else "red"
             subprocess.run([assembly_line.FFMPEG_EXE, "-y", "-f", "lavfi", "-i", f"color=c={color}:s=1080x1920:d=10", clip_path], check=True)
     
@@ -90,68 +90,121 @@ def generate_full_pipeline(topic=None, character=None, script=None, character_im
     
     # 4. Ready for Human Review
     db.save_setting("WORKFLOW_STATE", "PENDING_REVIEW")
-    print("✅ PIPELINE COMPLETE. WAITING FOR HUMAN APPROVAL.")
+    print("[pipeline] PIPELINE COMPLETE. WAITING FOR HUMAN APPROVAL.")
     return True
 
 def process_uploaded_video(video_bytes):
     """Bypasses generation and uses Gemini Vision to analyze an uploaded video."""
-    print("🚀 PROCESSING UPLOADED VIDEO...")
+    print("[upload] PROCESSING UPLOADED VIDEO...")
     db.save_setting("WORKFLOW_STATE", "GENERATING_PLAN")
     
     os.makedirs(WORKSPACE, exist_ok=True)
     with open(FINAL_REEL, "wb") as f:
         f.write(video_bytes)
         
-    print("🎬 Video saved. Sending to Gemini for analysis...")
+    print("[upload] Video saved. Sending to Gemini for analysis...")
     agent_brain.analyze_video_for_caption(FINAL_REEL)
     
     db.save_setting("WORKFLOW_STATE", "PENDING_REVIEW")
-    print("✅ ANALYSIS COMPLETE. WAITING FOR HUMAN APPROVAL.")
+    print("[upload] ANALYSIS COMPLETE. WAITING FOR HUMAN APPROVAL.")
     return True
 
-def serve_directory(port):
-    """Starts a simple HTTP server in the workspace directory."""
+def start_file_server(port):
+    """Serves the workspace directory over HTTP in a background thread. Returns the server."""
     import functools
     handler = functools.partial(http.server.SimpleHTTPRequestHandler, directory=WORKSPACE)
     httpd = socketserver.TCPServer(("", port), handler)
-    httpd.serve_forever()
+    threading.Thread(target=httpd.serve_forever, daemon=True).start()
+    return httpd
 
 def publish_approved_video():
-    """Uses ngrok to expose the local video and publishes via Meta API."""
+    """Publishes the approved Reel to Instagram. Only valid from PENDING_REVIEW.
+
+    PUBLISH_MODE=resumable uploads the local file directly; PUBLISH_MODE=ngrok exposes
+    the workspace via a tunnel and lets Meta fetch it. Whatever happens, ngrok and the
+    file server are shut down, and the state ends as IDLE (success, media ID stored in
+    LAST_MEDIA_ID) or FAILED (error stored in LAST_ERROR, failing step in LAST_ERROR_STEP).
+    Errors are re-raised to the caller.
+    """
+    state = db.get_setting("WORKFLOW_STATE")
+    if state != "PENDING_REVIEW":
+        raise RuntimeError(f"Publishing is only allowed from PENDING_REVIEW (current state: {state or 'unset'})")
+
     db.save_setting("WORKFLOW_STATE", "PUBLISHING")
-    
-    # Start local server in a background thread
-    PORT = 8000
-    server_thread = threading.Thread(target=serve_directory, args=(PORT,), daemon=True)
-    server_thread.start()
-    
-    # Open ngrok tunnel
-    print("🌍 Opening secure tunnel to local workspace...")
-    public_url = ngrok.connect(PORT).public_url
-    video_url = f"{public_url}/final_reel.mp4"
-    
-    print(f"🔗 Public URL ready: {video_url}")
-    
-    # Get plan details for caption
-    with open(PLAN_PATH, "r", encoding="utf-8") as f:
-        plan = json.load(f)
-        
-    caption = f"{plan['instagram_caption']}\n\n{' '.join(plan['hashtags'])}"
-    
-    # Publish to IG
-    print("📲 Sending to Instagram...")
-    media_id = ig_service.publish_reel(video_url, caption)
-    
-    # Cleanup
-    ngrok.kill()
-    db.save_setting("WORKFLOW_STATE", "IDLE")
-    
-    if media_id:
-        print("🎉 PUBLISH SUCCESSFUL!")
+    db.save_setting("LAST_ERROR", "")
+    db.save_setting("LAST_ERROR_STEP", "")
+    httpd = None
+    succeeded = False
+    try:
+        if not os.path.isfile(FINAL_REEL):
+            raise FileNotFoundError(f"Video not found: {FINAL_REEL}")
+
+        # Get plan details for caption
+        with open(PLAN_PATH, "r", encoding="utf-8") as f:
+            plan = json.load(f)
+        caption = f"{plan['instagram_caption']}\n\n{' '.join(plan['hashtags'])}"
+
+        mode = ig_service.get_publish_mode()
+        print(f"[publish] Sending to Instagram (PUBLISH_MODE={mode})...")
+        if mode == "resumable":
+            media_id = ig_service.publish_reel_local(FINAL_REEL, caption)
+        else:
+            PORT = 8000
+            httpd = start_file_server(PORT)
+            print("[publish] Opening secure tunnel to local workspace...")
+            public_url = ngrok.connect(PORT).public_url
+            video_url = f"{public_url}/final_reel.mp4"
+            print(f"[publish] Public URL ready: {video_url}")
+            media_id = ig_service.publish_reel(video_url, caption)
+
+        succeeded = True
+        db.save_setting("LAST_MEDIA_ID", media_id)
+        print(f"[publish] PUBLISH SUCCESSFUL! IG Media ID: {media_id}")
         return media_id
-    else:
-        print("❌ PUBLISH FAILED.")
-        return None
+    except BaseException as e:
+        # "setup" = failed before the first Graph API step (missing file, bad plan, ngrok, ...).
+        step = getattr(e, "step", None) or "setup"
+        message = f"Failed at step: {step}\n{type(e).__name__}: {e}"
+        response = getattr(e, "response_json", None)
+        if response:
+            message += "\n\nAPI response:\n" + json.dumps(response, indent=2)
+        db.save_setting("LAST_ERROR", message)
+        db.save_setting("LAST_ERROR_STEP", step)
+        print(f"[publish] FAILED at step {step}: {type(e).__name__}: {e}")
+        raise
+    finally:
+        try:
+            ngrok.kill()
+        except Exception as e:
+            print(f"[publish] WARNING: ngrok cleanup failed: {e}")
+        if httpd is not None:
+            httpd.shutdown()
+            httpd.server_close()
+        # Note: if the dashboard was reset while this publish was running, this overwrites
+        # that reset. Acceptable for a single-user tool; the final state reflects the outcome.
+        db.save_setting("WORKFLOW_STATE", "IDLE" if succeeded else "FAILED")
+
+def publish_may_have_succeeded():
+    """True if the last publish failed at media_publish, so the Reel may be live anyway
+    (e.g. the request reached Meta but the response was lost)."""
+    return db.get_setting("LAST_ERROR_STEP") == "publish"
+
+def can_return_to_review():
+    return os.path.isfile(FINAL_REEL) and os.path.isfile(PLAN_PATH)
+
+def return_to_review():
+    """FAILED -> PENDING_REVIEW, so the same video can be published again."""
+    state = db.get_setting("WORKFLOW_STATE")
+    if state != "FAILED":
+        raise RuntimeError(f"Can only return to review from FAILED (current state: {state or 'unset'})")
+    if not can_return_to_review():
+        raise FileNotFoundError("final_reel.mp4 or the video plan no longer exists")
+    db.save_setting("WORKFLOW_STATE", "PENDING_REVIEW")
+
+def reset_after_failure():
+    db.save_setting("LAST_ERROR", "")
+    db.save_setting("LAST_ERROR_STEP", "")
+    db.save_setting("WORKFLOW_STATE", "IDLE")
 
 # Ensure starting state is IDLE
 if not db.get_setting("WORKFLOW_STATE"):

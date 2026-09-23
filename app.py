@@ -95,15 +95,18 @@ with tab1:
         col3, col4 = st.columns(2)
         with col3:
             if st.button("✅ APPROVE & PUBLISH TO INSTAGRAM", type="primary", use_container_width=True):
-                with st.spinner("Uploading to Instagram... This takes about 60 seconds."):
-                    result = master_loop.publish_approved_video()
-                    if result:
+                with st.spinner("Uploading to Instagram... This can take a few minutes."):
+                    try:
+                        result = master_loop.publish_approved_video()
                         st.success(f"Successfully Published! Media ID: {result}")
                         time.sleep(3)
-                        db.save_setting("WORKFLOW_STATE", "IDLE")
-                        st.rerun()
-                    else:
-                        st.error("Publishing failed. Check terminal logs.")
+                    except Exception as e:
+                        # Publish failures leave the state at FAILED, which the rerun shows.
+                        # Anything else (e.g. a stale tab publishing from the wrong state) is shown here.
+                        if db.get_setting("WORKFLOW_STATE") != "FAILED":
+                            st.error(f"Could not publish: {e}")
+                            st.stop()
+                st.rerun()
         with col4:
             if st.button("🗑️ REJECT & RESTART", use_container_width=True):
                 db.save_setting("WORKFLOW_STATE", "IDLE")
@@ -111,6 +114,30 @@ with tab1:
 
     elif current_state == "PUBLISHING":
         st.info("Publishing in progress... Check terminal for details.")
+        st.caption("Only reset if the publish is stuck (e.g. the app was restarted mid-publish). "
+                   "Resetting while a publish is still running will be overwritten when it finishes.")
+        if st.button("🔄 Reset to IDLE", use_container_width=True):
+            db.save_setting("WORKFLOW_STATE", "IDLE")
+            st.rerun()
+
+    elif current_state == "FAILED":
+        st.error("❌ Publishing failed.")
+        if master_loop.publish_may_have_succeeded():
+            st.warning("⚠️ Publish may have succeeded — check Instagram before retrying.")
+        st.code(db.get_setting("LAST_ERROR") or "No error message was recorded.", language=None)
+        st.caption("Full request/response logs are in the terminal.")
+        col_back, col_reset = st.columns(2)
+        with col_back:
+            can_review = master_loop.can_return_to_review()
+            if st.button("↩️ Back to review", use_container_width=True, disabled=not can_review):
+                master_loop.return_to_review()
+                st.rerun()
+            if not can_review:
+                st.caption("The video or plan file no longer exists, so it can't be reviewed again.")
+        with col_reset:
+            if st.button("🔄 Reset to IDLE", type="primary", use_container_width=True):
+                master_loop.reset_after_failure()
+                st.rerun()
         
     else:
         st.info(f"System is currently in state: {current_state}. Please wait...")

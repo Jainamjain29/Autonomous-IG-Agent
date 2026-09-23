@@ -33,13 +33,32 @@ class IGPublishError(Exception):
 
     `transient` is True for network errors, timeouts and 5xx responses, which may
     succeed on retry. 4xx responses and error payloads on 2xx are not transient.
+    `step` is the publish step that failed (see PUBLISH_STEPS), or None if the
+    error happened before the first step.
     """
 
-    def __init__(self, message, status_code=None, response_json=None, transient=False):
+    def __init__(self, message, status_code=None, response_json=None, transient=False, step=None):
         super().__init__(message)
         self.status_code = status_code
         self.response_json = response_json
         self.transient = transient
+        self.step = step
+
+
+PUBLISH_STEPS = ("container", "upload", "poll", "publish")
+
+
+def _step(name, fn, *args, **kwargs):
+    """Runs one publish step, tagging any exception with the step name if it has none."""
+    try:
+        return fn(*args, **kwargs)
+    except BaseException as e:
+        if getattr(e, "step", None) is None:
+            try:
+                e.step = name
+            except AttributeError:
+                pass
+        raise
 
 
 def _log(message):
@@ -261,7 +280,8 @@ def publish_reel_local(path, caption, publish=True):
         _log(f"WARNING: resumable upload is only documented for graph.facebook.com, not {host}. "
              "If it fails, set PUBLISH_MODE=ngrok.")
 
-    container = _create_container({"media_type": "REELS", "upload_type": "resumable", "caption": caption})
+    container = _step("container", _create_container,
+                      {"media_type": "REELS", "upload_type": "resumable", "caption": caption})
     container_id = container["id"]
     upload_uri = container.get("uri")
     if not upload_uri:
@@ -269,20 +289,21 @@ def publish_reel_local(path, caption, publish=True):
         upload_uri = f"https://rupload.facebook.com/ig-api-upload/{version}/{container_id}"
         _log(f"No upload uri in response; using {upload_uri}")
 
-    _upload_file(upload_uri, path)
-    wait_for_container(container_id)
+    _step("upload", _upload_file, upload_uri, path)
+    _step("poll", wait_for_container, container_id)
 
     if not publish:
         _log(f"Dry run: container {container_id} is FINISHED; skipping media_publish")
         return container_id
-    return publish_container(container_id)
+    return _step("publish", publish_container, container_id)
 
 
 def publish_reel(video_url, caption):
     """Publishes a Reel from a publicly reachable URL (the ngrok fallback). Returns the IG media ID."""
-    container = _create_container({"media_type": "REELS", "video_url": video_url, "caption": caption})
-    wait_for_container(container["id"])
-    return publish_container(container["id"])
+    container = _step("container", _create_container,
+                      {"media_type": "REELS", "video_url": video_url, "caption": caption})
+    _step("poll", wait_for_container, container["id"])
+    return _step("publish", publish_container, container["id"])
 
 
 def get_recent_analytics():

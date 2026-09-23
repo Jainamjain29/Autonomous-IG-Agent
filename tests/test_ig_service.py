@@ -167,6 +167,31 @@ class IGServiceTest(unittest.TestCase):
         self.assertEqual(self.calls[0][1], "https://graph.instagram.com/v26.0/1784/media")
         self.assertEqual(self.calls[1][1], "https://rupload.facebook.com/ig-api-upload/v26.0/C3")
 
+    def test_errors_are_tagged_with_failing_step(self):
+        bad = FakeResponse(400, {"error": {"message": "Bad request"}})
+        cases = {
+            "container": [bad],
+            "upload": [CREATED, ok({"debug_info": {"message": "ProcessingFailedError"}})],
+            "poll": [CREATED, UPLOADED, ok({"id": "C1", "status_code": "ERROR", "status": "Error: 2207026"})],
+            "publish": [CREATED, UPLOADED, FINISHED, bad],
+        }
+        for step, script in cases.items():
+            with self.subTest(step=step):
+                err = self.assert_raises_ig("", script, lambda: ig.publish_reel_local(self.video, "cap"))
+                self.assertEqual(err.step, step)
+
+    def test_ngrok_path_errors_are_tagged_with_failing_step(self):
+        bad = FakeResponse(400, {"error": {"message": "Bad request"}})
+        for step, script in {"container": [bad], "poll": [ok({"id": "C2"}), SERVER_ERROR] + [SERVER_ERROR] * 3,
+                             "publish": [ok({"id": "C2"}), FINISHED, bad]}.items():
+            with self.subTest(step=step):
+                err = self.assert_raises_ig("", script, lambda: ig.publish_reel("https://x/v.mp4", "cap"))
+                self.assertEqual(err.step, step)
+
+    def test_validation_errors_have_no_step(self):
+        err = self.assert_raises_ig("not found", [], lambda: ig.publish_reel_local("nope.mp4", "cap"))
+        self.assertIsNone(err.step)
+
     # --- polling ---
 
     def test_container_error_raises_immediately(self):
