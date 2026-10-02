@@ -35,7 +35,7 @@ def generate_video_plan(custom_topic=None, custom_script=None, custom_character=
     
     # If a character image is provided, extract its visual description
     if character_image_path and os.path.exists(character_image_path):
-        print("👁️ Analyzing Character Reference Image for consistent prompting...")
+        print("👁️  Analyzing Character Reference Image for consistent prompting...")
         img_file = genai.upload_file(path=character_image_path)
         while img_file.state.name == "PROCESSING":
             time.sleep(2)
@@ -78,7 +78,7 @@ def generate_video_plan(custom_topic=None, custom_script=None, custom_character=
     }}
     """
 
-    print("💭 Reasoning and generating content strategy...")
+    print("🧠 Reasoning and generating content strategy...")
     
     response = generate_content_with_retry(
         model,
@@ -99,93 +99,21 @@ def generate_video_plan(custom_topic=None, custom_script=None, custom_character=
     except json.JSONDecodeError:
         try:
             import re
-            print(f"⚠️ JSON Decode failed. Attempting to extract JSON block.")
             match = re.search(r'\{.*\}', raw_text, re.DOTALL)
             if match:
-                fixed_text = re.sub(r'\\u[0-9a-fA-F]{4}', '', match.group(0))
-                video_plan = json.loads(fixed_text)
+                video_plan = json.loads(match.group(0))
             else:
-                raise ValueError("No JSON block found.")
+                raise ValueError("Could not parse JSON from model output.")
         except Exception as e:
-            print(f"⚠️ Ultimate JSON failure: {e}. Forcing Gemini to retry the entire generation...")
-            return generate_video_plan(custom_topic, custom_script, custom_character, character_image_path)
-    
+            raise ValueError(f"Failed to extract JSON from raw response: {raw_text}\nError: {e}")
+
     os.makedirs(WORKSPACE, exist_ok=True)
     with open(PLAN_PATH, "w", encoding="utf-8") as f:
         json.dump(video_plan, f, indent=4)
         
-    print(f"✅ Video plan successfully generated and saved to {PLAN_PATH}")
+    print("✅ Strategy formulation complete. Video Plan saved to workspace.")
     return video_plan
 
-def analyze_video_for_caption(video_path):
-    print("🧠 Uploading video to Gemini Vision for analysis...")
-    model = get_gemini_client()
-    
-    # Upload to Gemini File API
-    video_file = genai.upload_file(path=video_path)
-    
-    # Wait for processing
-    while video_file.state.name == "PROCESSING":
-        print("⏳ Waiting for Gemini to process the video...")
-        time.sleep(2)
-        video_file = genai.get_file(video_file.name)
-        
-    if video_file.state.name == "FAILED":
-        raise ValueError("Video processing failed in Gemini.")
-        
-    print("👁️ Gemini is watching the video...")
-    system_prompt = """
-    Watch this video and act as an expert Instagram Growth Manager.
-    Generate a highly engaging caption and trending hashtags that perfectly match the video's content.
-    
-    IMPORTANT: Do NOT use unicode escape sequences (like \\uXXXX) for emojis. Output actual emoji characters directly.
-    Output EXCLUSIVELY in valid JSON format:
-    {
-        "instagram_caption": "Your engaging caption here",
-        "hashtags": ["#tag1", "#tag2"]
-    }
-    """
-    
-    response = model.generate_content(
-        [video_file, system_prompt],
-        generation_config={"response_mime_type": "application/json"}
-    )
-    
-    raw_text = response.text.strip()
-    if raw_text.startswith("```json"):
-        raw_text = raw_text[7:]
-    if raw_text.endswith("```"):
-        raw_text = raw_text[:-3]
-    raw_text = raw_text.strip()
-    
-    try:
-        plan = json.loads(raw_text)
-    except json.JSONDecodeError as e:
-        print(f"⚠️ JSON Decode failed. Attempting to fix bad escapes. Raw text: {raw_text}")
-        # Sometimes models output invalid \u escapes. We can strip them or fallback.
-        import re
-        fixed_text = re.sub(r'\\u[0-9a-fA-F]{4}', '', raw_text)
-        plan = json.loads(fixed_text)
-    plan["topic"] = "User Uploaded Video"
-    plan["voiceover_script"] = "N/A"
-    plan["scenes"] = []
-    
-    os.makedirs(WORKSPACE, exist_ok=True)
-    with open(PLAN_PATH, "w", encoding="utf-8") as f:
-        json.dump(plan, f, indent=4)
-        
-    print(f"✅ Caption generated and saved to {PLAN_PATH}")
-    
-    # Cleanup file from Google's servers
-    genai.delete_file(video_file.name)
-    return plan
-
 if __name__ == "__main__":
-    try:
-        plan = generate_video_plan()
-        print("\n📋 GENERATED PLAN:")
-        print(f"Topic: {plan['topic']}")
-        print(f"Scenes: {len(plan['scenes'])}")
-        print(f"Script Length: {len(plan['voiceover_script'].split())} words")
-    except Exception as e:
-        print(f"❌ Error: {e}")
+    plan = generate_video_plan()
+    print(json.dumps(plan, indent=2))

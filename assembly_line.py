@@ -9,9 +9,11 @@ FFMPEG_EXE = imageio_ffmpeg.get_ffmpeg_exe()
 # Ensure FFmpeg is on the system PATH for Whisper to use it
 os.environ["PATH"] = os.path.dirname(FFMPEG_EXE) + os.pathsep + os.environ["PATH"]
 
+import sys
+
 def generate_voiceover(script_text, output_mp3):
     print(f"🎙️ Generating Voiceover... -> {output_mp3}")
-    cmd = ["edge-tts", "--voice", "en-US-ChristopherNeural", "--text", script_text, "--write-media", output_mp3]
+    cmd = [sys.executable, "-m", "edge_tts", "--voice", "en-US-ChristopherNeural", "--text", script_text, "--write-media", output_mp3]
     subprocess.run(cmd, check=True)
     print("✅ Voiceover generated.")
 
