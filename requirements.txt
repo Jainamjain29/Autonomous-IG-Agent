@@ -17,3 +17,6 @@ edge-tts
 
 # Browser automation (flow_automator.py) - run `playwright install chromium` after pip install
 playwright
+
+# Insight Agent storage (insight/). 2.0.31+ is the first release supporting Python 3.13.
+SQLAlchemy>=2.0.31

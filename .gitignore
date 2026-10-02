@@ -9,3 +9,5 @@ workspace/
 *.srt
 .env
 *.exe
+# Insight Agent metric dictionary seeds are versioned source, not data.
+!insight/seeds/*.json
