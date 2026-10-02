@@ -42,5 +42,31 @@ def init_db(engine):
     return engine
 
 
+def upgrade_db(engine=None):
+    """Run alembic upgrade head on the database and seed the metric definitions.
+    If database exists with tables but no alembic_version table, stamp baseline."""
+    from alembic import command
+    from alembic.config import Config
+    from sqlalchemy import inspect
+
+    engine = engine or make_engine()
+    alembic_ini_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "alembic.ini")
+    cfg = Config(alembic_ini_path)
+
+    with engine.connect() as connection:
+        cfg.attributes["connection"] = connection
+        insp = inspect(connection)
+        tables = set(insp.get_table_names())
+        if "alembic_version" not in tables and "accounts" in tables:
+            command.stamp(cfg, "head")
+        else:
+            command.upgrade(cfg, "head")
+
+    with session_factory(engine).begin() as session:
+        seed_metric_definitions(session)
+
+    return engine
+
+
 def session_factory(engine):
     return sessionmaker(bind=engine, expire_on_commit=False)

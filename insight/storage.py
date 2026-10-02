@@ -24,10 +24,13 @@ def upsert_publication(session, account, record, content_id=None):
     if pub is None:
         pub = Publication(platform=account.platform, platform_post_id=record.platform_post_id,
                           account_id=account.id, media_type=record.media_type,
+                          media_product_type=record.media_product_type,
                           published_at=record.published_at, content_id=content_id)
         session.add(pub)
     pub.caption = record.caption
     pub.permalink = record.permalink
+    if record.media_product_type is not None:
+        pub.media_product_type = record.media_product_type
     if content_id is not None:
         pub.content_id = content_id
     session.flush()
@@ -51,7 +54,7 @@ def _completeness(result, delayed):
 
 
 def save_snapshot(session, *, checkpoint, collected_at, result=None, publication=None, account=None,
-                  delayed=False, platform=None):
+                  delayed=False, platform=None, period_key=None):
     """Store one snapshot + its long-format values. Returns (snapshot, created).
 
     result=None records an 'unavailable' snapshot (e.g. an unrecoverable checkpoint).
@@ -63,7 +66,7 @@ def save_snapshot(session, *, checkpoint, collected_at, result=None, publication
         raise ValueError(f"checkpoint {checkpoint!r} is for publications only")
     collected_at = to_utc(collected_at)
     subject_type, subject = ("publication", publication) if publication is not None else ("account", account)
-    period_key = period_key_for(checkpoint, collected_at)
+    period_key = period_key or period_key_for(checkpoint, collected_at)
 
     existing = session.scalar(select(MetricSnapshot).filter_by(
         subject_type=subject_type, subject_id=subject.id, checkpoint=checkpoint, period_key=period_key))

@@ -29,6 +29,7 @@ class PublicationRecord:
     published_at: datetime
     caption: str | None = None
     permalink: str | None = None
+    media_product_type: str | None = None
 
 
 @dataclass

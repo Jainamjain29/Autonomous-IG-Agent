@@ -58,22 +58,33 @@ Do not reorder or merge steps without the owner's explicit approval.
 2. Each step is **one commit**, with **all tests passing** (old and new).
 3. Append a short entry to the Step Log below covering what was built, files, tests and known limits.
 
-## Architecture (as of Step 1)
+## Architecture (as of Step 2)
 
 ```
 insight/
   __init__.py
   timeutil.py        UTC helpers + UTCDateTime column type (UTC on write, UTC attached on read)
-  models.py          SQLAlchemy 2.x models (8 tables)
+  models.py          SQLAlchemy 2.x models (7 tables)
   checkpoints.py     Checkpoint config + due/missed/unrecoverable logic + period_key rules
   dictionary.py      Load the metric dictionary seed; map platform -> canonical
   seeds/metric_dictionary.v1.json   Versioned metric dictionary
   privacy.py         hash_author(), redact_secrets()
-  db.py              make_engine(), init_db(), session_factory(); DB paths
+  http_client.py     Reusable GraphClient with retry, backoff, 200-call cap, Meta usage header throttling
+  probe.py           Live probe CLI (python -m insight.probe) validating dictionary names
+  collect.py         Collector CLI (python -m insight.collect [--dry-run])
+  alembic.ini        Alembic configuration for insight migrations
+  migrations/        Alembic migration environment and versioned scripts
+    env.py
+    versions/0001_baseline_schema.py
+  db.py              make_engine(), upgrade_db(), init_db(), session_factory(); DB paths
   storage.py         Idempotent writers: accounts, publications, snapshots, comments, raw responses
   adapters/base.py   PlatformAdapter ABC + record dataclasses
   adapters/fake.py   FakeAdapter over fixture data (IG-shaped payloads)
+  adapters/instagram.py  InstagramAdapter implementing PlatformAdapter over live API
   fixtures.py        Sample-data generator + loader (CLI)
+scripts/
+  install_collector_task.ps1    Registers Windows Task Scheduler task (every 30m)
+  uninstall_collector_task.ps1  Unregisters Windows Task Scheduler task
 ```
 
 ### Data model
@@ -156,6 +167,29 @@ Safety and reuse:
 - It refuses to write to the real DB (`data/insight.db` or `INSIGHT_DB_URL`).
 - From code: `fixtures.generate_dataset()` builds the in-memory dataset, and `FakeAdapter(dataset)` gives you an adapter for tests.
 
+## How to run collector
+
+```bash
+# Run one collection pass against Instagram Graph API
+python -m insight.collect
+
+# Dry-run: make real API calls, verify auth & responses, write nothing to DB
+python -m insight.collect --dry-run
+
+# Custom per-run API call limit (default 200)
+python -m insight.collect --call-cap 100
+```
+
+## How to install / uninstall Windows Scheduled Task
+
+```powershell
+# Register "StreamOvate Insight Collector" task to run every 30 minutes
+powershell -ExecutionPolicy Bypass -File scripts/install_collector_task.ps1
+
+# Remove the scheduled task
+powershell -ExecutionPolicy Bypass -File scripts/uninstall_collector_task.ps1
+```
+
 ## Configuration
 
 | Variable | Purpose |
@@ -202,3 +236,41 @@ The full suite (108 existing + 49 new) passes.
 - There is no migration tool yet (`create_all` only). Add Alembic before the first schema change on real data.
 - Missed checkpoints are not backfilled from platform time series; they are marked `delayed` or `unavailable`.
 - Fixture comment texts are templates, so they have no realistic language variety yet.
+
+### Step 2: Live Probe + Instagram Collector & Scheduler (2026-10-02)
+
+**Step 2a: Live API Probe**
+- Built `insight/probe.py` (`python -m insight.probe`) to validate metric dictionary names against Instagram Graph API.
+- Reusable `GraphClient` with retry on 5xx/timeouts (up to 3 times with exponential backoff 1s, 2s, 4s), 4xx no-retry, hard call cap (40 calls), and token redaction.
+- Tested all 13 dictionary metrics against the live API (`@streamovate`):
+  - Reel metrics (9): `views`, `reach`, `likes`, `comments`, `shares`, `saved`, `total_interactions`, `ig_reels_avg_watch_time`, `ig_reels_video_view_total_time` -> all 9 OK.
+  - Account metrics (4): `followers_count` (User field), `profile_views`, `reach`, `views` (day / total_value) -> all 4 OK.
+  - Zero values (`comments=0`, `saves=0`) correctly recognized as OK, not NO_DATA.
+  - Verified no undiscovered metrics returned.
+  - Raw JSON responses saved with tokens stripped to `data/probe/<ts>/`.
+
+**Step 2b: Instagram Collector + Snapshot Scheduler**
+- Alembic database migrations configured via `insight/alembic.ini` (`alembic -c insight/alembic.ini upgrade head`), keeping the module self-contained. Baseline schema (`0001_baseline_schema.py`) covers all 7 tables in `insight/models.py`.
+- `upgrade_db()` in `insight/db.py` uses `insight/alembic.ini` and runs migrations automatically before collection and auto-stamps un-versioned databases.
+- Shared `GraphClient` in `insight/http_client.py` with 200-call default cap and `X-App-Usage` / `X-Business-Use-Case-Usage` (>80%) throttling check.
+- `InstagramAdapter` in `insight/adapters/instagram.py`:
+  - `list_publications` with pagination cursor traversal.
+  - `fetch_post_metrics` for Reels (`media_product_type == "REELS"`, `media_type == "VIDEO"`).
+  - `fetch_account_metrics` with explicit UTC day since/until timestamps (followers excluded).
+  - `fetch_account_followers` fetching current User profile followers count for account adhoc snapshot.
+  - `fetch_comments` raises `NotImplementedError` (deferred to Step 5).
+- Live lookback limit verified: Meta Graph API accepts up to 729 days back (2 years cutoff: 730 days returns `(#100) since param is not valid. Metrics data is available for the last 2 years`). Configured `ACCOUNT_INSIGHTS_MAX_LOOKBACK_DAYS = 729`.
+- `insight/collect.py` (`python -m insight.collect [--dry-run]`):
+  - Idempotent: re-running immediately collects nothing new.
+  - Inter-process file lock (`data/insight.lock`) with 25-minute stale timeout.
+  - Syncs publications, collects due/missed checkpoints (`1h`, `24h`, `48h`, `7d`, `28d`), marks unrecoverable checkpoints as `unavailable`, takes adhoc backfill snapshot for newly seen posts older than checkpoints.
+  - Daily account catch-up rule: catches up missed daily snapshots from the later of (a) the account's `connected_at` date, (b) the earliest publication date, (c) today minus `ACCOUNT_INSIGHTS_MAX_LOOKBACK_DAYS` (729 days). Never more days per run than fit in the call cap; resumes automatically on the next run.
+  - Records followers in account `adhoc` snapshot at most once per UTC day.
+  - Logs summary line to `data/logs/collect.log` (rotating 5 MB).
+- Windows Scheduled Task scripts:
+  - `scripts/install_collector_task.ps1`: Registers 30-minute interactive task "StreamOvate Insight Collector".
+  - `scripts/uninstall_collector_task.ps1`: Removes the scheduled task.
+
+**Tests**
+- 29 new tests across `tests/test_insight_probe.py` (18 tests) and `tests/test_insight_collector.py` (11 tests).
+- Total suite: 186 tests passing cleanly.

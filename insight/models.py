@@ -58,6 +58,7 @@ class Publication(Base):
     # Links to the content pipeline later; no FK because that lives in another DB.
     content_id: Mapped[Optional[str]] = mapped_column(String(128))
     media_type: Mapped[str] = mapped_column(String(32))
+    media_product_type: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
     caption: Mapped[Optional[str]] = mapped_column(Text)
     permalink: Mapped[Optional[str]] = mapped_column(String(1024))
     published_at: Mapped[datetime] = mapped_column(UTCDateTime())
