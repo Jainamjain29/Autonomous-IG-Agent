@@ -176,3 +176,24 @@ class Comment(Base):
     # SHA-256(salt + username). Raw usernames are never stored.
     author_hash: Mapped[Optional[str]] = mapped_column(String(64))
     parent_comment_id: Mapped[Optional[int]] = mapped_column(ForeignKey("comments.id"))
+
+
+class PostTag(Base):
+    """Categorization tags for a publication (topic, format, hook) from AI analysis."""
+
+    __tablename__ = "post_tags"
+    __table_args__ = (
+        UniqueConstraint("publication_id", "dimension", "prompt_version", name="uq_post_tags_pub_dim_ver"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    publication_id: Mapped[int] = mapped_column(ForeignKey("publications.id", ondelete="CASCADE"))
+    dimension: Mapped[str] = mapped_column(String(32))  # 'topic', 'format', 'hook'
+    value: Mapped[str] = mapped_column(String(64))
+    confidence: Mapped[float] = mapped_column(Float)
+    source: Mapped[str] = mapped_column(String(32), default="ai")
+    model: Mapped[str] = mapped_column(String(64))
+    prompt_version: Mapped[str] = mapped_column(String(16))
+    input_hash: Mapped[str] = mapped_column(String(64))
+    tagged_at: Mapped[datetime] = mapped_column(UTCDateTime())
+

@@ -55,6 +55,7 @@ class AlembicTests(unittest.TestCase):
                 "metric_values",
                 "comments",
                 "alembic_version",
+                "post_tags",
             }
             self.assertEqual(tables, expected)
             engine.dispose()

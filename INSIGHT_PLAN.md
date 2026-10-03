@@ -31,8 +31,8 @@ it can later move into a separate SaaS repo unchanged.
 | 1 | Foundation: schema, metric dictionary, adapter interface, checkpoints, fixtures, FakeAdapter | **done** |
 | 2 | Instagram collector + snapshot scheduler | **done** |
 | 3 | Basic metrics view | **done** |
-| 4 | Performance analysis | next |
-| 5 | Comments collector + audience intelligence | |
+| 4 | Performance analysis | **done** |
+| 5 | Comments collector + audience intelligence | next |
 | 6 | Recommendations | |
 | 7 | Full reports + alerts | |
 | 8 | YouTube adapter | |
@@ -58,26 +58,32 @@ Do not reorder or merge steps without the owner's explicit approval.
 2. Each step is **one commit**, with **all tests passing** (old and new).
 3. Append a short entry to the Step Log below covering what was built, files, tests and known limits.
 
-## Architecture (as of Step 2)
+## Architecture (as of Step 4)
 
 ```
 insight/
   __init__.py
   timeutil.py        UTC helpers + UTCDateTime column type (UTC on write, UTC attached on read)
-  models.py          SQLAlchemy 2.x models (7 tables)
+  models.py          SQLAlchemy 2.x models (8 tables: accounts, publications, metric_definitions, metric_snapshots, metric_values, raw_responses, comments, post_tags)
   checkpoints.py     Checkpoint config + due/missed/unrecoverable logic + period_key rules
   dictionary.py      Load the metric dictionary seed; map platform -> canonical
-  seeds/metric_dictionary.v1.json   Versioned metric dictionary
+  seeds/
+    metric_dictionary.v1.json   Versioned metric dictionary
+    taxonomy.v1.json            Fixed 3-dimension taxonomy (topic, format, hook)
   privacy.py         hash_author(), redact_secrets()
   http_client.py     Reusable GraphClient with retry, backoff, 200-call cap, Meta usage header throttling
   probe.py           Live probe CLI (python -m insight.probe) validating dictionary names
   collect.py         Collector CLI (python -m insight.collect [--dry-run])
+  tagging.py         AI post categorization via Gemini into taxonomy v1 (retagging guardrails)
+  analysis.py        Pure mathematical analysis: baselines, percentiles, classifications, pace flags, comparisons, growth
   queries.py         Pure read functions returning plain data / DataFrames (no Streamlit import)
-  view.py            Streamlit metrics view (streamlit run insight/view.py)
+  view.py            Streamlit metrics & performance view (streamlit run insight/view.py)
   alembic.ini        Alembic configuration for insight migrations
   migrations/        Alembic migration environment and versioned scripts
     env.py
-    versions/0001_baseline_schema.py
+    versions/
+      0001_baseline_schema.py
+      0002_post_tags.py
   db.py              make_engine(), upgrade_db(), init_db(), session_factory(); DB paths
   storage.py         Idempotent writers: accounts, publications, snapshots, comments, raw responses
   adapters/base.py   PlatformAdapter ABC + record dataclasses
@@ -316,4 +322,40 @@ The full suite (108 existing + 49 new) passes.
   - Concurrency: read-only connection open during concurrent write does not block write.
   - Verification that daily account queries never return followers.
 - Total suite: **227 tests passing cleanly** in 14.37s.
+
+### Step 4: Performance Analysis + AI Tagging (2026-10-03)
+
+**API Probe Results**
+- **Part A (Media Insights)**: `/{media_id}/insights` for `follows`, `profile_visits`, and `profile_activity` on REELS were all rejected by Instagram API with HTTP 400 (error code 100: "The Media Insights API does not support the follows metric for this media product type").
+- **Account Follower Probe**: `/{ig_user_id}/insights` with `follower_count` and `follows_and_unfollows` returned HTTP 200 with `data: []` because Meta requires accounts to have >=100 followers for demographic and day-bounded follower growth metrics.
+- **Growth Layer Decision**: Derived growth change strictly from consecutive adhoc account followers readings normalized per 24 hours, comparing publish windows (publish day + 1 day) against non-publish periods. Explicitly labeled **"association, not cause"**.
+
+**Built**
+- **Fixed Taxonomy Seed** (`insight/seeds/taxonomy.v1.json`):
+  - `topic`: `ai_tools`, `smartphones_gadgets`, `software_apps`, `internet_cloud_basics`, `cybersecurity`, `programming`, `tech_news`, `other`, `unknown`
+  - `format`: `explainer`, `how_to`, `comparison`, `news_update`, `top_list`, `myth_busting`, `other`, `unknown`
+  - `hook`: `question`, `bold_claim`, `surprising_stat`, `problem_solution`, `story`, `demo_visual`, `none`, `unknown`
+- **AI Tagging** (`insight/tagging.py`):
+  - Categorizes publication caption into topic, format, and hook using Gemini (`google.generativeai` directly, with 30s timeout).
+  - Validates values strictly against `taxonomy.v1.json`; invalid classifications fallback to `"unknown"` with confidence `0.0`.
+  - Re-tagging guardrail: re-tags only if `input_hash` (caption hash) changes or `prompt_version` changes.
+  - Collector integration: runs inside `insight/collect.py` directly after publication upsert (capped at 10 posts per run); failures are logged and non-fatal.
+- **Alembic Migration 0002** (`0002_post_tags.py`):
+  - Created `post_tags` table with unique constraint on `(publication_id, dimension, prompt_version)`.
+  - Zero schema drift verified via Alembic metadata autogenerate test.
+- **Performance Analysis Engine** (`insight/analysis.py`):
+  - Pure functions; numbers computed in code.
+  - Main score: 7d views. Supporting: engagement rate (`total_interactions / reach`), avg watch time (seconds).
+  - Confidence tiers: `<5` posts = `"not enough data"` (raw numbers only, classifications paused); `5–9` = `"early signal, low confidence"`; `>=10` = `"full"`.
+  - Baseline: median of last 20 posts with 7d views; typical range: 25th–75th percentile. Classifies posts as Above / At / Below Normal.
+  - Early pace flags: 24h & 48h views vs. checkpoint median (`>2x` taking off, `<0.5x` slow start, suppressed when `<5` posts).
+  - Group comparisons: IST posting-hour blocks, weekday, caption length, hashtag count, and AI tags. Groups with `<3` posts show `"too few posts"`.
+  - Growth layer: calculates normalized 24h follower growth rate across consecutive adhoc intervals; marks publish-associated vs non-publish intervals.
+- **Streamlit Performance Tab** (`insight/view.py`):
+  - Added "🎯 Performance" tab with confidence tier banner, baseline summary cards, classified posts table with pace flags & AI tags, comparison tables across 7 dimensions, and growth correlation cards.
+
+**Tests**
+- 16 new tests in `tests/test_insight_analysis.py` covering mathematics, confidence tiers, classification, pace flags, groupings, taxonomy validation, re-tag rules, collector tagging error resilience, migration 0002, and Streamlit `AppTest` rendering.
+- Total suite: **245 tests passing cleanly** in 16.06s.
+
 

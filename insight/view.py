@@ -33,7 +33,11 @@ from insight.queries import (
     get_account_info,
     get_daily_account_metrics,
     get_followers_over_time,
+    get_comparison_breakdowns,
+    get_growth_overview,
     get_overdue_checkpoints,
+    get_performance_overview,
+    get_posts_for_analysis,
     get_posts_with_snapshots,
     get_raw_response_stats,
     get_snapshot_completeness_counts,
@@ -121,6 +125,30 @@ def _cached_account_info():
     if engine is None:
         return None
     return get_account_info(engine)
+
+
+@st.cache_data(ttl=60)
+def _cached_performance():
+    engine = _get_engine()
+    if engine is None:
+        return {"baseline": {}, "posts": []}
+    return get_performance_overview(engine)
+
+
+@st.cache_data(ttl=60)
+def _cached_comparisons():
+    engine = _get_engine()
+    if engine is None:
+        return {}
+    return get_comparison_breakdowns(engine)
+
+
+@st.cache_data(ttl=60)
+def _cached_growth():
+    engine = _get_engine()
+    if engine is None:
+        return {}
+    return get_growth_overview(engine)
 
 
 # ── Pre-flight checks ─────────────────────────────────────────────────
@@ -396,6 +424,184 @@ def _render_health_tab():
     col2.metric("Latest Fetch", _format_time_12h(raw_stats["latest_fetched_at"]))
 
 
+# ── Tab: Performance ───────────────────────────────────────────────────
+
+def _render_performance_tab():
+    st.subheader("🎯 Performance Analysis (Growth-Focused)")
+
+    perf = _cached_performance()
+    baseline = perf.get("baseline", {})
+    tier = baseline.get("tier", "not enough data")
+    sample_size = baseline.get("sample_size", 0)
+
+    # 1. Confidence Tier Banner
+    if tier == "not enough data":
+        st.info(
+            f"ℹ️ **Confidence Tier: Not Enough Data** ({sample_size}/5 posts with 7d views).\n\n"
+            "Raw metrics are displayed below. Performance classifications, pace flags, and conclusions are paused until at least 5 posts reach their 7-day checkpoint."
+        )
+    elif tier == "early signal, low confidence":
+        st.warning(
+            f"⚡ **Confidence Tier: Early Signal, Low Confidence** ({sample_size} posts with 7d views).\n\n"
+            "Trends are emerging but sample size is small (5–9 posts). Use with caution."
+        )
+    else:
+        st.success(
+            f"✅ **Confidence Tier: Full Confidence** ({sample_size} posts with 7d views).\n\n"
+            "Robust baseline established (10+ posts)."
+        )
+
+    # 2. Baseline Summary Card
+    med = baseline.get("median")
+    p25 = baseline.get("p25")
+    p75 = baseline.get("p75")
+
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Median 7d Views", f"{med:,.1f}" if med is not None else "—")
+    c2.metric("Typical Range (25th–75th)", f"{p25:,.0f} – {p75:,.0f}" if p25 is not None and p75 is not None else "—")
+    c3.metric("Baseline Window", f"{sample_size} posts (max 20)")
+    c4.metric("Confidence Tier", tier.title())
+
+    st.divider()
+
+    # 3. Posts Performance & Classifications
+    st.markdown("### 🎬 Post Scores & Pace")
+    posts = perf.get("posts", [])
+    if posts:
+        post_rows = []
+        for p in posts:
+            views_7d_str = format_metric_value(p["views_7d"], "views")
+            if p.get("is_7d_delayed") and p["views_7d"] is not None:
+                views_7d_str += " ⏰ (delayed)"
+
+            erg = p.get("engagement_rate_7d")
+            erg_str = f"{erg * 100:.1f}%" if erg is not None else "—"
+            awt = p.get("avg_watch_time_7d")
+            awt_str = f"{awt:.1f}s" if awt is not None else "—"
+
+            cls_badge = p.get("classification") or "—"
+            if cls_badge == "Above Normal":
+                cls_badge = "🟢 Above Normal"
+            elif cls_badge == "Below Normal":
+                cls_badge = "🔴 Below Normal"
+            elif cls_badge == "At Normal":
+                cls_badge = "⚪ At Normal"
+
+            pace_24 = p.get("pace_24h") or "—"
+            if pace_24 == "taking off":
+                pace_24 = "🚀 taking off"
+            elif pace_24 == "slow start":
+                pace_24 = "🐢 slow start"
+
+            tags = p.get("tags", {})
+            tag_parts = []
+            for dim in ("topic", "format", "hook"):
+                t = tags.get(dim)
+                if t:
+                    tag_parts.append(f"{dim}: {t['value']} ({int(t['confidence']*100)}%)")
+            tag_label = " · ".join(tag_parts) if tag_parts else "Untagged"
+
+            post_rows.append({
+                "Published": _format_time_12h(p["published_at"]),
+                "Caption": (p["caption"] or "")[:50] + ("…" if len(p.get("caption") or "") > 50 else ""),
+                "7d Views (Main Score)": views_7d_str,
+                "Engagement (7d)": erg_str,
+                "Avg Watch (7d)": awt_str,
+                "Classification": cls_badge,
+                "24h Pace": pace_24,
+                "AI Tags (Topic · Format · Hook)": tag_label,
+            })
+        st.table(post_rows)
+    else:
+        st.info("No posts available for analysis.")
+
+    st.divider()
+
+    # 4. Breakdowns & Comparisons
+    st.markdown("### 📊 Performance Comparisons (7d Views)")
+    st.caption("Groups with fewer than 3 posts display **too few posts** and draw no conclusions.")
+
+    comps = _cached_comparisons()
+    dim_tabs = st.tabs([
+        "⏰ Posting Hour (IST)",
+        "📅 Weekday",
+        "📝 Caption Length",
+        "🏷️ Hashtags",
+        "💡 Topic (AI-tagged)",
+        "📐 Format (AI-tagged)",
+        "🪝 Hook (AI-tagged)",
+    ])
+
+    dim_keys = [
+        ("posting_hour", "Hour Block"),
+        ("weekday", "Weekday"),
+        ("caption_length", "Caption Length"),
+        ("hashtag_count", "Hashtag Count"),
+        ("topic", "Topic"),
+        ("format", "Format"),
+        ("hook", "Hook"),
+    ]
+
+    for i, (key, col_name) in enumerate(dim_keys):
+        with dim_tabs[i]:
+            grp_data = comps.get(key, [])
+            if grp_data:
+                rows = []
+                for g in grp_data:
+                    med_val = f"{g['median_views']:,.1f}" if g.get("median_views") is not None else "—"
+                    status_lbl = "⚠️ too few posts (<3)" if g.get("status") == "too few posts" else "✅ sufficient data"
+                    rows.append({
+                        col_name: g["group"],
+                        "Posts": g["count"],
+                        "Median 7d Views": med_val,
+                        "Status": status_lbl,
+                    })
+                st.table(rows)
+            else:
+                st.info("No comparison data yet.")
+
+    st.divider()
+
+    # 5. Growth Layer
+    st.markdown("### 📈 Growth Layer (Account Follower Trends)")
+    growth = _cached_growth()
+    g_tier = growth.get("tier", "not enough data")
+    days_obs = growth.get("total_days_observed", 0)
+
+    if g_tier == "not enough data":
+        st.info(
+            f"ℹ️ **Growth Confidence: Not Enough Data** ({days_obs:.1f}/14 days observed).\n\n"
+            "Follower trend patterns require at least 14 days of consecutive snapshot readings to identify reliable correlations."
+        )
+    else:
+        st.success(f"✅ **Growth Confidence: Sufficient Data** ({days_obs:.1f} days observed).")
+
+    post_rate = growth.get("post_day_median_rate_24h")
+    non_post_rate = growth.get("non_post_day_median_rate_24h")
+
+    gc1, gc2, gc3 = st.columns(3)
+    gc1.metric("Publish Days Net Follower Rate / 24h", f"{post_rate:+,.1f}" if post_rate is not None else "—")
+    gc2.metric("Non-Publish Days Net Follower Rate / 24h", f"{non_post_rate:+,.1f}" if non_post_rate is not None else "—")
+    gc3.metric("Follower Observation Span", f"{days_obs:.1f} days")
+
+    st.warning("⚠️ **Notice**: All relationships between posting and follower growth represent an **observed association, not causation**.", icon="ℹ️")
+
+    intervals = growth.get("intervals", [])
+    if intervals:
+        with st.expander("🔍 View Consecutive Adhoc Follower Intervals & Normalized 24h Rates"):
+            int_rows = []
+            for it in intervals:
+                int_rows.append({
+                    "Period Start": _format_time_12h(it["start"]),
+                    "Period End": _format_time_12h(it["end"]),
+                    "Gap Length": f"{it['hours']:.1f} hours",
+                    "Net Follower Change": f"{int(it['delta']):+d}",
+                    "Rate / 24h": f"{it['rate_per_24h']:+.2f}",
+                    "Post-Associated Window": "Yes (Publish + Next Day)" if it["is_post_related"] else "No",
+                })
+            st.table(int_rows)
+
+
 # ── Main ───────────────────────────────────────────────────────────────
 
 def main():
@@ -411,13 +617,16 @@ def main():
     if not _preflight():
         return
 
-    tab_posts, tab_account, tab_health = st.tabs(["📋 Posts", "📈 Account", "🏥 Data Health"])
+    tab_posts, tab_account, tab_perf, tab_health = st.tabs(["📋 Posts", "📈 Account", "🎯 Performance", "🏥 Data Health"])
 
     with tab_posts:
         _render_posts_tab()
 
     with tab_account:
         _render_account_tab()
+
+    with tab_perf:
+        _render_performance_tab()
 
     with tab_health:
         _render_health_tab()
@@ -427,3 +636,4 @@ if __name__ == "__page__":
     main()
 else:
     main()
+

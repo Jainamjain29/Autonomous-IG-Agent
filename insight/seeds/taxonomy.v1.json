@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "taxonomy": {
+    "topic": [
+      "ai_tools",
+      "smartphones_gadgets",
+      "software_apps",
+      "internet_cloud_basics",
+      "cybersecurity",
+      "programming",
+      "tech_news",
+      "other",
+      "unknown"
+    ],
+    "format": [
+      "explainer",
+      "how_to",
+      "comparison",
+      "news_update",
+      "top_list",
+      "myth_busting",
+      "other",
+      "unknown"
+    ],
+    "hook": [
+      "question",
+      "bold_claim",
+      "surprising_stat",
+      "problem_solution",
+      "story",
+      "demo_visual",
+      "none",
+      "unknown"
+    ]
+  }
+}

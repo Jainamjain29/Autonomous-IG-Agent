@@ -112,6 +112,7 @@ class Collector:
         now = datetime.now(UTC)
         stats = {
             "posts_synced": 0,
+            "tagged": 0,
             "snap_new": 0,
             "snap_unavail": 0,
             "errors": 0,
@@ -146,6 +147,18 @@ class Collector:
                 upsert_publication(session, account, prec)
                 stats["posts_synced"] += 1
             session.flush()
+
+            # 3b. AI Tagging for untagged publications (max 10 per run)
+            if not self.dry_run:
+                try:
+                    from .tagging import tag_untagged_publications
+                    all_pubs = session.scalars(
+                        select(Publication).filter_by(account_id=account.id)
+                    ).all()
+                    stats["tagged"] = tag_untagged_publications(session, all_pubs, max_posts=10)
+                    session.flush()
+                except Exception as tag_err:
+                    self.logger.warning(f"[collect] Tagging error (non-fatal): {tag_err}")
 
             # 4. Process post checkpoints
             db_pubs = session.scalars(
@@ -346,7 +359,7 @@ class Collector:
             stats["elapsed"] = round(time.time() - start_time, 2)
 
         summary_line = (
-            f"[collect] OK: synced={stats['posts_synced']} snap_new={stats['snap_new']} "
+            f"[collect] OK: synced={stats['posts_synced']} tagged={stats['tagged']} snap_new={stats['snap_new']} "
             f"snap_unavail={stats['snap_unavail']} errors={stats['errors']} "
             f"calls={stats['calls']}/{self.call_cap} elapsed={stats['elapsed']}s"
         )

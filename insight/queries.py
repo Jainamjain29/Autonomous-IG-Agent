@@ -22,15 +22,28 @@ from .models import (
     Account,
     MetricSnapshot,
     MetricValue,
+    PostTag,
     Publication,
     RawResponse,
 )
 from .timeutil import UTC
+from .analysis import (
+    analyze_growth_association,
+    classify_performance,
+    compute_baseline,
+    compute_early_pace_flags,
+    get_caption_length_bucket,
+    get_confidence_tier,
+    get_hashtag_bucket,
+    get_posting_hour_block,
+    get_weekday_name,
+    group_comparison,
+)
 
 # ── Display configuration ──────────────────────────────────────────────
 DISPLAY_TIMEZONE = timezone(timedelta(hours=5, minutes=30))  # Asia/Kolkata
 DISPLAY_TZ_NAME = "IST"
-ALEMBIC_HEAD = "0001_baseline"
+ALEMBIC_HEAD = "0002_post_tags"
 LOG_PATH = os.path.join(REPO_ROOT, "data", "logs", "collect.log")
 
 # Post metrics in display order
@@ -360,7 +373,7 @@ def get_account_info(engine) -> dict[str, Any] | None:
 # Matches: [2026-10-02 23:44:29,490] INFO: [collect] OK: synced=2 snap_new=0 ...
 _LOG_OK_RE = re.compile(
     r"\[(?P<ts>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d+)\] INFO: \[collect\] OK: "
-    r"synced=(?P<synced>\d+) snap_new=(?P<snap_new>\d+) "
+    r"synced=(?P<synced>\d+) (?:tagged=(?P<tagged>\d+) )?snap_new=(?P<snap_new>\d+) "
     r"snap_unavail=(?P<snap_unavail>\d+) errors=(?P<errors>\d+) "
     r"calls=(?P<calls>\d+)/(?P<call_cap>\d+) elapsed=(?P<elapsed>[\d.]+)s"
 )
@@ -386,10 +399,12 @@ def parse_collect_log(log_path: str | None = None) -> list[dict[str, Any]]:
                 ts_str = m.group("ts").replace(",", ".")
                 # Parse as naive UTC (collector logs in UTC)
                 ts = datetime.strptime(ts_str[:19], "%Y-%m-%d %H:%M:%S").replace(tzinfo=UTC)
+                tagged_val = int(m.group("tagged")) if m.group("tagged") is not None else 0
                 entries.append({
                     "time": ts,
                     "status": "OK",
                     "synced": int(m.group("synced")),
+                    "tagged": tagged_val,
                     "snap_new": int(m.group("snap_new")),
                     "snap_unavail": int(m.group("snap_unavail")),
                     "errors": int(m.group("errors")),
@@ -405,6 +420,7 @@ def parse_collect_log(log_path: str | None = None) -> list[dict[str, Any]]:
                     "time": ts,
                     "status": "FAILED",
                     "synced": 0,
+                    "tagged": 0,
                     "snap_new": 0,
                     "snap_unavail": 0,
                     "errors": 1,
@@ -422,3 +438,127 @@ def last_successful_run(log_entries: list[dict]) -> datetime | None:
         if entry["status"] == "OK":
             return entry["time"]
     return None
+
+
+# ── Performance Analysis Queries ───────────────────────────────────────
+
+def get_posts_for_analysis(engine) -> list[dict[str, Any]]:
+    """Return publications enriched with 7d, 24h, 48h snapshot metrics and AI tags."""
+    posts = []
+    with engine.connect() as conn:
+        pubs = conn.execute(
+            select(Publication).order_by(Publication.published_at.desc())
+        ).fetchall()
+
+        for pub in pubs:
+            snaps = conn.execute(
+                select(MetricSnapshot).filter_by(
+                    subject_type="publication",
+                    subject_id=pub.id,
+                )
+            ).fetchall()
+
+            metrics_by_cp: dict[str, dict[str, float]] = {}
+            completeness_by_cp: dict[str, str] = {}
+            for snap in snaps:
+                completeness_by_cp[snap.checkpoint] = snap.completeness
+                if snap.completeness != "unavailable":
+                    vals = conn.execute(
+                        select(MetricValue).filter_by(snapshot_id=snap.id)
+                    ).fetchall()
+                    metrics_by_cp[snap.checkpoint] = {
+                        v.canonical_metric: v.value for v in vals if v.value is not None
+                    }
+
+            # AI Tags
+            tags = conn.execute(
+                select(PostTag).filter_by(publication_id=pub.id)
+            ).fetchall()
+            tag_dict = {
+                t.dimension: {"value": t.value, "confidence": t.confidence}
+                for t in tags
+            }
+
+            m7d = metrics_by_cp.get("7d", {})
+            views_7d = m7d.get("views")
+            reach_7d = m7d.get("reach")
+            interactions_7d = m7d.get("total_interactions")
+            erg_7d = (interactions_7d / reach_7d) if (reach_7d and reach_7d > 0 and interactions_7d is not None) else None
+
+            pub_dt = pub.published_at.replace(tzinfo=UTC) if pub.published_at.tzinfo is None else pub.published_at
+
+            posts.append({
+                "id": pub.id,
+                "platform_post_id": pub.platform_post_id,
+                "caption": pub.caption,
+                "permalink": pub.permalink,
+                "published_at": pub_dt,
+                "views_7d": views_7d,
+                "reach_7d": reach_7d,
+                "engagement_rate_7d": erg_7d,
+                "avg_watch_time_7d": m7d.get("avg_watch_time_seconds"),
+                "is_7d_delayed": (completeness_by_cp.get("7d") == "delayed"),
+                "views_24h": metrics_by_cp.get("24h", {}).get("views"),
+                "views_48h": metrics_by_cp.get("48h", {}).get("views"),
+                "main_score": views_7d,
+                "tags": tag_dict,
+            })
+    return posts
+
+
+def get_performance_overview(engine) -> dict[str, Any]:
+    """Compute overall performance baseline, post classifications, and pace flags."""
+    posts = get_posts_for_analysis(engine)
+    valid_7d_scores = [p["views_7d"] for p in posts if p["views_7d"] is not None]
+    baseline_info = compute_baseline(valid_7d_scores)
+
+    hist_24h = [p["views_24h"] for p in posts if p["views_24h"] is not None]
+    hist_48h = [p["views_48h"] for p in posts if p["views_48h"] is not None]
+
+    enriched_posts = []
+    p25 = baseline_info.get("p25")
+    p75 = baseline_info.get("p75")
+    tier = baseline_info.get("tier")
+
+    for p in posts:
+        classification = None
+        if tier != "not enough data" and p["views_7d"] is not None and p25 is not None and p75 is not None:
+            classification = classify_performance(p["views_7d"], p25, p75)
+
+        pace_24h = compute_early_pace_flags(p["views_24h"], hist_24h)
+        pace_48h = compute_early_pace_flags(p["views_48h"], hist_48h)
+
+        enriched_posts.append({
+            **p,
+            "classification": classification,
+            "pace_24h": pace_24h,
+            "pace_48h": pace_48h,
+        })
+
+    return {
+        "baseline": baseline_info,
+        "posts": enriched_posts,
+    }
+
+
+def get_comparison_breakdowns(engine) -> dict[str, list[dict[str, Any]]]:
+    """Compute group comparisons across time blocks, weekdays, caption, hashtags, and AI tags."""
+    posts = get_posts_for_analysis(engine)
+    return {
+        "posting_hour": group_comparison(posts, lambda p: get_posting_hour_block(p["published_at"])),
+        "weekday": group_comparison(posts, lambda p: get_weekday_name(p["published_at"])),
+        "caption_length": group_comparison(posts, lambda p: get_caption_length_bucket(p["caption"])),
+        "hashtag_count": group_comparison(posts, lambda p: get_hashtag_bucket(p["caption"])),
+        "topic": group_comparison(posts, lambda p: p["tags"].get("topic", {}).get("value")),
+        "format": group_comparison(posts, lambda p: p["tags"].get("format", {}).get("value")),
+        "hook": group_comparison(posts, lambda p: p["tags"].get("hook", {}).get("value")),
+    }
+
+
+def get_growth_overview(engine) -> dict[str, Any]:
+    """Compute growth association between adhoc followers and posting days."""
+    followers = get_followers_over_time(engine)
+    posts = get_posts_for_analysis(engine)
+    pub_dates = [p["published_at"] for p in posts]
+    return analyze_growth_association(followers, pub_dates)
+

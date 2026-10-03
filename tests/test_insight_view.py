@@ -641,6 +641,7 @@ class StreamlitRenderTests(unittest.TestCase):
                 tab_labels = [tab.label for tab in at.tabs]
                 self.assertIn("📋 Posts", tab_labels)
                 self.assertIn("📈 Account", tab_labels)
+                self.assertIn("🎯 Performance", tab_labels)
                 self.assertIn("🏥 Data Health", tab_labels)
             finally:
                 if at is not None:
