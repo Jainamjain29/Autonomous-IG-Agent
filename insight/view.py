@@ -18,6 +18,7 @@ if _REPO_ROOT not in sys.path:
 
 import streamlit as st
 
+from insight.analysis import humanize
 from insight.db import make_readonly_engine
 from insight.queries import (
     ACCOUNT_DAILY_METRICS,
@@ -47,6 +48,11 @@ from insight.queries import (
     get_sentiment_breakdown,
     get_category_breakdown,
     get_spam_abuse_comments_query,
+    get_avoid_notes_query,
+    get_follow_through_scoreboard,
+    get_post_feedback_map,
+    get_recommendation_history,
+    get_recommendation_overview,
     last_successful_run,
     parse_collect_log,
     _format_time_12h,
@@ -205,6 +211,46 @@ def _cached_spam_abuse():
     return get_spam_abuse_comments_query(engine)
 
 
+@st.cache_data(ttl=60)
+def _cached_recommendation_overview(week_key: str | None = None):
+    engine = _get_engine()
+    if engine is None:
+        return None
+    return get_recommendation_overview(engine, week_key=week_key)
+
+
+@st.cache_data(ttl=60)
+def _cached_avoid_notes():
+    engine = _get_engine()
+    if engine is None:
+        return []
+    return get_avoid_notes_query(engine)
+
+
+@st.cache_data(ttl=60)
+def _cached_follow_through_scoreboard():
+    engine = _get_engine()
+    if engine is None:
+        return {"total_recommended": 0, "followed_count": 0, "beat_normal_count": 0, "beat_normal_rate": 0.0, "records": []}
+    return get_follow_through_scoreboard(engine)
+
+
+@st.cache_data(ttl=60)
+def _cached_recommendation_history():
+    engine = _get_engine()
+    if engine is None:
+        return []
+    return get_recommendation_history(engine)
+
+
+@st.cache_data(ttl=60)
+def _cached_post_feedback_map():
+    engine = _get_engine()
+    if engine is None:
+        return {}
+    return get_post_feedback_map(engine)
+
+
 # ── Pre-flight checks ─────────────────────────────────────────────────
 
 def _preflight() -> bool:
@@ -260,6 +306,7 @@ def _render_posts_tab():
     _show_legend()
 
     posts = _cached_posts()
+    fb_map = _cached_post_feedback_map()
     if not posts:
         st.info("No publications found.")
         return
@@ -338,6 +385,15 @@ def _render_posts_tab():
                     metric_rows.append({"Metric": m, "Value": val, "Missing reason": reason or ""})
                 if metric_rows:
                     st.table(metric_rows)
+
+            # Per-post learning feedback
+            fb_list = fb_map.get(post["id"], [])
+            if fb_list:
+                st.markdown("---")
+                st.markdown("💡 **Learning Feedback**")
+                for fb in fb_list:
+                    badge = "🤖 AI-written" if fb["is_ai_text"] else "📝 Template"
+                    st.info(f"**{fb['basis_checkpoint']} Snapshot** ({badge} · {fb['generated_at']}):\n\n{fb['text']}")
 
         st.divider()
 
@@ -798,6 +854,125 @@ def _render_audience_tab():
             st.table(sa_rows)
 
 
+# ── Tab: Recommendations ───────────────────────────────────────────────
+
+def _render_recommendations_tab():
+    st.subheader("💡 What to Post Next & Learning Feedback")
+
+    overview = _cached_recommendation_overview()
+    avoid_notes = _cached_avoid_notes()
+    scoreboard = _cached_follow_through_scoreboard()
+    history = _cached_recommendation_history()
+
+    if not overview:
+        st.info("No recommendations generated yet. Run the collector or CLI to generate recommendations for this week.")
+        return
+
+    mode = overview["mode"]
+    week_key = overview["week_key"]
+    gen_time = overview["generated_at"]
+
+    # 1. Mode Banner
+    if mode == "exploration":
+        st.warning(
+            f"🧭 **Exploration Mode** ({week_key} · Generated {gen_time})\n\n"
+            "Account has fewer than 10 posts with 7-day data. Suggestions test varied, untried or least-tried combinations. "
+            "Labelled **exploration, not evidence**."
+        )
+    else:
+        st.success(
+            f"🎯 **Evidence Mode** ({week_key} · Generated {gen_time})\n\n"
+            "Account has 10+ posts with 7-day data. Suggestions prioritize proven combinations with >=1.2x baseline (and >=3 posts), "
+            "with top audience ideas ranked first."
+        )
+
+    st.markdown("### 📋 Recommended Actions for this Week")
+    recs = overview.get("recommendations", [])
+    if not recs:
+        st.info("No recommendations found in this week's set.")
+    else:
+        for r in recs:
+            rank = r["rank"]
+            kind = r["kind"].upper().replace("_", " ")
+            topic = r["topic"]
+            fmt = r["format"]
+            hook = r["hook"]
+            timing = f"{r['weekday']} · {r['posting_block']}"
+            conf = r["confidence"]
+            status = r["status"].upper()
+            is_ai = r["is_ai_text"]
+            badge = "🤖 AI-written" if is_ai else "📝 Template"
+
+            status_icon = "🟢" if r["status"] == "followed" else ("⚪" if r["status"] == "open" else "⚫")
+
+            with st.container():
+                c1, c2 = st.columns([4, 1])
+                c1.markdown(f"#### #{rank} [{kind}] {humanize(topic)} · {humanize(fmt)}")
+                c2.caption(f"{status_icon} **{status}** · {badge}")
+                st.markdown(f"**Action**: {r['text']}")
+                st.caption(f"🎯 **Hook**: {humanize(hook)} · ⏰ **Target Schedule**: {timing} · 📊 **Confidence**: {conf}")
+
+                # If followed, show outcome ratio
+                if r["status"] == "followed":
+                    ratio = r.get("outcome_ratio")
+                    ratio_str = f"{ratio:.1f}x baseline" if ratio is not None else "⏳ 7d checkpoint pending"
+                    st.success(f"✅ Followed by publication #{r.get('matched_publication_id')} · 7d Result: **{ratio_str}**")
+
+                facts = r.get("facts", {})
+                if facts:
+                    with st.expander(f"🔍 Underlying Facts (Rank #{rank})"):
+                        st.json(facts)
+                st.divider()
+
+    # 2. Avoid notes in evidence mode
+    if mode == "evidence" and avoid_notes:
+        st.markdown("### ⚠️ Avoid Notes")
+        st.caption("Groups with at least 3 posts performing <= 0.8x baseline (underperforming):")
+        for an in avoid_notes:
+            st.warning(f"• **{an['dimension']}**: `{an['value']}` (median {an['ratio']:.1f}x baseline across {an['post_count']} posts)")
+        st.divider()
+
+    # 3. Follow-Through Scoreboard
+    st.markdown("### 🎯 Follow-Through Scoreboard")
+    m1, m2, m3, m4 = st.columns(4)
+    m1.metric("Total Recommended", scoreboard["total_recommended"])
+    m2.metric("Followed Posts", scoreboard["followed_count"])
+    m3.metric("Beat-Normal Count", scoreboard["beat_normal_count"])
+    m4.metric("Beat-Normal Rate", f"{scoreboard['beat_normal_rate']}%")
+
+    records = scoreboard.get("records", [])
+    if records:
+        table_rows = []
+        for rec in records:
+            ratio_val = rec.get("outcome_ratio")
+            ratio_str = f"{ratio_val:.1f}x normal" if ratio_val is not None else ("⏳ pending 7d" if rec["status"] == "followed" else "—")
+            table_rows.append({
+                "Week": rec["week_key"],
+                "Rank": f"#{rec['rank']}",
+                "Kind": rec["kind"],
+                "Topic · Format": f"{rec['topic']} · {rec['format']}",
+                "Status": rec["status"].upper(),
+                "Outcome": ratio_str,
+                "Wording": "AI" if rec["is_ai_text"] else "Template",
+            })
+        st.table(table_rows)
+
+    st.divider()
+
+    # 4. Past Weeks History
+    if history:
+        with st.expander("📚 Past Weeks Recommendation Sets"):
+            hist_rows = []
+            for h in history:
+                hist_rows.append({
+                    "Week": h["week_key"],
+                    "Mode": h["mode"].title(),
+                    "Generated (IST)": h["generated_at"],
+                    "Suggestions": h["item_count"],
+                })
+            st.table(hist_rows)
+
+
 # ── Main ───────────────────────────────────────────────────────────────
 
 def main():
@@ -813,8 +988,8 @@ def main():
     if not _preflight():
         return
 
-    tab_posts, tab_account, tab_perf, tab_aud, tab_health = st.tabs([
-        "📋 Posts", "📈 Account", "🎯 Performance", "👥 Audience", "🏥 Data Health"
+    tab_posts, tab_account, tab_perf, tab_aud, tab_recs, tab_health = st.tabs([
+        "📋 Posts", "📈 Account", "🎯 Performance", "👥 Audience", "💡 Recommendations", "🏥 Data Health"
     ])
 
     with tab_posts:
@@ -828,6 +1003,9 @@ def main():
 
     with tab_aud:
         _render_audience_tab()
+
+    with tab_recs:
+        _render_recommendations_tab()
 
     with tab_health:
         _render_health_tab()

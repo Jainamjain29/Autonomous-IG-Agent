@@ -24,6 +24,56 @@ BASELINE_WINDOW_SIZE = 20
 # IST timezone for posting hour analysis
 IST_TIMEZONE = timezone(timedelta(hours=5, minutes=30))
 
+# ── Shared time-block definition (single source of truth) ──────────────────────
+# IST blocks: Morning 6 AM – 11:59 AM, Afternoon 12 PM – 4:59 PM,
+# Evening 5 PM – 9:59 PM, Night 10 PM – 5:59 AM.
+POSTING_BLOCKS = [
+    "Morning (6:00 AM–11:59 AM)",
+    "Afternoon (12:00 PM–4:59 PM)",
+    "Evening (5:00 PM–9:59 PM)",
+    "Night (10:00 PM–5:59 AM)",
+]
+
+# ── Human-readable label map for every taxonomy value ──────────────────────────
+# One shared place; used by recommend.py for facts/prompts, view.py for display.
+HUMAN_LABELS: dict[str, str] = {
+    # Topics
+    "ai_tools": "AI tools",
+    "smartphones_gadgets": "Smartphones & gadgets",
+    "software_apps": "Software & apps",
+    "internet_cloud_basics": "Internet & cloud basics",
+    "cybersecurity": "Cybersecurity",
+    "programming": "Programming",
+    "tech_news": "Tech news",
+    "other": "Other",
+    "unknown": "Unknown",
+    # Formats
+    "explainer": "Explainer",
+    "how_to": "How-to",
+    "comparison": "Comparison",
+    "news_update": "News update",
+    "top_list": "Top list",
+    "myth_busting": "Myth-busting",
+    # Hooks
+    "question": "Question",
+    "bold_claim": "Bold claim",
+    "surprising_stat": "Surprising stat",
+    "problem_solution": "Problem & solution",
+    "story": "Story",
+    "demo_visual": "Demo / visual",
+    "none": "None",
+    # Time blocks (identity map for display)
+    "Morning (6:00 AM – 11:59 AM)": "Morning (6:00 AM – 11:59 AM)",
+    "Afternoon (12:00 PM – 4:59 PM)": "Afternoon (12:00 PM – 4:59 PM)",
+    "Evening (5:00 PM – 9:59 PM)": "Evening (5:00 PM – 9:59 PM)",
+    "Night (10:00 PM – 5:59 AM)": "Night (10:00 PM – 5:59 AM)",
+}
+
+
+def humanize(key: str) -> str:
+    """Return the human label for a taxonomy key, or title-case the key itself."""
+    return HUMAN_LABELS.get(key, key.replace("_", " ").title())
+
 
 def percentile(data: list[float], p: float) -> float | None:
     """Calculate the p-th percentile (0.0 to 1.0) using linear interpolation."""
@@ -114,12 +164,12 @@ def get_posting_hour_block(dt_utc: datetime) -> str:
     local = dt_utc.astimezone(IST_TIMEZONE)
     hour = local.hour
     if 6 <= hour < 12:
-        return "Morning (06:00-11:59)"
+        return POSTING_BLOCKS[0]
     if 12 <= hour < 17:
-        return "Afternoon (12:00-16:59)"
+        return POSTING_BLOCKS[1]
     if 17 <= hour < 22:
-        return "Evening (17:00-21:59)"
-    return "Night (22:00-05:59)"
+        return POSTING_BLOCKS[2]
+    return POSTING_BLOCKS[3]
 
 
 def get_weekday_name(dt_utc: datetime) -> str:

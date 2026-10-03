@@ -226,3 +226,79 @@ class PostTag(Base):
     input_hash: Mapped[str] = mapped_column(String(64))
     tagged_at: Mapped[datetime] = mapped_column(UTCDateTime())
 
+
+class RecommendationSet(Base):
+    """Weekly recommendation set generated for an account."""
+
+    __tablename__ = "recommendation_sets"
+    __table_args__ = (
+        UniqueConstraint("week_key", name="uq_recommendation_sets_week_key"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    week_key: Mapped[str] = mapped_column(String(16))  # e.g. '2026-W40'
+    mode: Mapped[str] = mapped_column(String(16))  # 'exploration', 'evidence'
+    generated_at: Mapped[datetime] = mapped_column(UTCDateTime())
+    model: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    prompt_version: Mapped[str] = mapped_column(String(16))
+
+    recommendations: Mapped[list["Recommendation"]] = relationship(
+        back_populates="recommendation_set",
+        cascade="all, delete-orphan",
+        order_by="Recommendation.rank",
+    )
+
+
+class Recommendation(Base):
+    """Single actionable recommendation within a weekly set."""
+
+    __tablename__ = "recommendations"
+    __table_args__ = (
+        UniqueConstraint("set_id", "rank", name="uq_recommendations_set_rank"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    set_id: Mapped[int] = mapped_column(ForeignKey("recommendation_sets.id", ondelete="CASCADE"), index=True)
+    rank: Mapped[int] = mapped_column(Integer)
+    kind: Mapped[str] = mapped_column(String(32))  # 'exploration', 'evidence', 'audience_idea'
+    topic: Mapped[str] = mapped_column(String(64))
+    format: Mapped[str] = mapped_column(String(64))
+    hook: Mapped[str] = mapped_column(String(64))
+    posting_block: Mapped[str] = mapped_column(String(64))
+    weekday: Mapped[str] = mapped_column(String(32))
+    facts_json: Mapped[str] = mapped_column(Text)
+    text: Mapped[str] = mapped_column(Text)
+    is_ai_text: Mapped[bool] = mapped_column(Boolean, default=True)
+    confidence: Mapped[str] = mapped_column(String(64))
+    status: Mapped[str] = mapped_column(String(16), default="open")  # 'open', 'followed', 'expired'
+    matched_publication_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("publications.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    outcome_ratio: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+
+    recommendation_set: Mapped["RecommendationSet"] = relationship(back_populates="recommendations")
+    matched_publication: Mapped[Optional["Publication"]] = relationship()
+
+
+class PostFeedback(Base):
+    """Evaluation and learning feedback for a published post."""
+
+    __tablename__ = "post_feedback"
+    __table_args__ = (
+        UniqueConstraint("publication_id", "basis_checkpoint", "prompt_version", name="uq_post_feedback_pub_basis_ver"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    publication_id: Mapped[int] = mapped_column(ForeignKey("publications.id", ondelete="CASCADE"), index=True)
+    basis_checkpoint: Mapped[str] = mapped_column(String(16))  # '7d', '48h', '24h', etc.
+    facts_json: Mapped[str] = mapped_column(Text)
+    text: Mapped[str] = mapped_column(Text)
+    is_ai_text: Mapped[bool] = mapped_column(Boolean, default=True)
+    model: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    prompt_version: Mapped[str] = mapped_column(String(16))
+    generated_at: Mapped[datetime] = mapped_column(UTCDateTime())
+
+    publication: Mapped["Publication"] = relationship()
+
+

@@ -391,10 +391,32 @@ The full suite (108 existing + 49 new) passes.
     - Content Ideas cards with viewer demand metrics and sample viewer questions + single mentions expander.
     - Sentiment distribution and category breakdown tables.
     - Filtered spam & abuse expander.
-
 **Tests**
 - 11 new tests in `tests/test_insight_audience.py` covering pagination, nested replies, reply under old comment, own-account identification, database-wide privacy zero-raw-username verification, taxonomy validation fallbacks, needs-reply clearing, content ideas ranking with 2-author threshold, sentiment breakdown excluding unknown, and Streamlit `AppTest` rendering with 5 tabs.
 - Full suite: **256 tests passing cleanly** in 17.21s.
 
+### Step 6: Recommendations & Post Feedback (2026-10-04)
 
+**Built**
+- **Alembic Migration 0004** (`0004_recommendations.py`):
+  - Created `recommendation_sets`, `recommendations`, and `post_feedback` tables with constraints, indexes, and foreign keys.
+- **Recommendation & Evaluation Engine** (`insight/recommend.py`):
+  - Weekly recommendation sets (3–5 suggestions) indexed by ISO week key (`YYYY-Www`).
+  - Exploration mode (<10 usable 7d posts): varied test plan across untried / least-tried dimensions (distinct topics across all suggestions, deterministic per `week_key`, labeled `"exploration, not evidence"`).
+  - Evidence mode (>=10 usable 7d posts): symmetric performance thresholds (recommend groups >=1.2x baseline with >=3 posts; "avoid" notes for groups <=0.8x baseline with >=3 posts; neutral in-between; Step 5 audience content ideas with >=2 authors rank first).
+  - Hard number guard: rejects invented numbers, multipliers ("twice", "double", "half", "triple"), spelled-out numbers, and causal claims ("caused", "causes"); safely falls back to code template. All valid numbers/labels/counts stored in `facts_json`.
+  - Confidence tier discipline: in "not enough data" tier (<5 usable 7d posts), zero Gemini calls are made for post feedback; generates code template containing facts only, zero judgements.
+  - Follow-through tracking: one-to-one matching (highest rank wins) within 14 days of recommendation set generation; records 7d outcome ratio vs baseline when available.
+  - CLI runner: `python -m insight.recommend [--regenerate-week]`.
+- **Collector Integration** (`insight/collect.py`):
+  - Section 8: automatically creates current week recommendation set, generates post feedback for recent posts, and reconciles follow-through matches.
+- **Streamlit View Integration** (`insight/view.py`):
+  - Added "💡 Recommendations" tab displaying active suggestions, confidence banners, avoid notes, follow-through scoreboard, and historical sets.
+  - Embedded post learning feedback in "📋 Posts" expanders.
+- **Pure Queries** (`insight/queries.py`):
+  - Added `get_recommendation_overview`, `get_avoid_notes_query`, `get_follow_through_scoreboard`, `get_recommendation_history`, `get_post_feedback_map`.
+  - Updated `ALEMBIC_HEAD` to `"0004_recommendations"`.
 
+**Tests**
+- 14 new tests in `tests/test_insight_recommend.py` covering exploration generation, distinct topics, symmetric evidence thresholds, audience idea ranking, hard number guard & multiplier rejection, template fallback on guard failure, no-Gemini rule when <5 posts, 14-day matching window, one-to-one post matching, CLI runner, and end-to-end integration.
+- Full suite: **270 tests passing cleanly** in 27.02s.

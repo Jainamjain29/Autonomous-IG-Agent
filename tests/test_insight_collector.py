@@ -58,6 +58,9 @@ class AlembicTests(unittest.TestCase):
                     "alembic_version",
                     "post_tags",
                     "comment_labels",
+                    "recommendation_sets",
+                    "recommendations",
+                    "post_feedback",
                 }
                 self.assertEqual(tables, expected)
             finally:

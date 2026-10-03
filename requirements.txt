@@ -8,6 +8,8 @@ python-dotenv
 
 # AI (agent_brain.py, assembly_line.py)
 # TODO: pin grpcio and google-generativeai to the known-working versions (to be supplied)
+# Pin pyarrow to 19.0.1: newer releases (e.g. 25.0+) contain DLLs blocked by Windows AppLocker / Smart App Control
+pyarrow==19.0.1
 google-generativeai
 openai-whisper
 

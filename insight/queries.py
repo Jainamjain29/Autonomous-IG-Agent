@@ -22,9 +22,12 @@ from .models import (
     Account,
     MetricSnapshot,
     MetricValue,
+    PostFeedback,
     PostTag,
     Publication,
     RawResponse,
+    Recommendation,
+    RecommendationSet,
 )
 from .timeutil import UTC
 from .analysis import (
@@ -43,7 +46,7 @@ from .analysis import (
 # ── Display configuration ──────────────────────────────────────────────
 DISPLAY_TIMEZONE = timezone(timedelta(hours=5, minutes=30))  # Asia/Kolkata
 DISPLAY_TZ_NAME = "IST"
-ALEMBIC_HEAD = "0003_comments_and_audience"
+ALEMBIC_HEAD = "0004_recommendations"
 LOG_PATH = os.path.join(REPO_ROOT, "data", "logs", "collect.log")
 
 # Post metrics in display order
@@ -614,4 +617,143 @@ def get_growth_overview(engine) -> dict[str, Any]:
     posts = get_posts_for_analysis(engine)
     pub_dates = [p["published_at"] for p in posts]
     return analyze_growth_association(followers, pub_dates)
+
+
+def get_recommendation_overview(engine, week_key: str | None = None) -> dict[str, Any] | None:
+    """Return the specified or latest recommendation set with items."""
+    import json
+    with session_factory(engine)() as session:
+        if week_key:
+            rec_set = session.scalar(select(RecommendationSet).filter_by(week_key=week_key))
+        else:
+            rec_set = session.scalar(
+                select(RecommendationSet).order_by(RecommendationSet.generated_at.desc()).limit(1)
+            )
+
+        if not rec_set:
+            return None
+
+        recs = session.scalars(
+            select(Recommendation).filter_by(set_id=rec_set.id).order_by(Recommendation.rank.asc())
+        ).all()
+
+        rec_items = []
+        for r in recs:
+            facts = {}
+            if r.facts_json:
+                try:
+                    facts = json.loads(r.facts_json)
+                except Exception:
+                    pass
+
+            rec_items.append({
+                "id": r.id,
+                "rank": r.rank,
+                "kind": r.kind,
+                "topic": r.topic,
+                "format": r.format,
+                "hook": r.hook,
+                "posting_block": r.posting_block,
+                "weekday": r.weekday,
+                "text": r.text,
+                "is_ai_text": r.is_ai_text,
+                "confidence": r.confidence,
+                "status": r.status,
+                "facts": facts,
+                "matched_publication_id": r.matched_publication_id,
+                "outcome_ratio": r.outcome_ratio,
+            })
+
+        return {
+            "id": rec_set.id,
+            "week_key": rec_set.week_key,
+            "mode": rec_set.mode,
+            "generated_at": _format_time_12h(rec_set.generated_at),
+            "model": rec_set.model,
+            "prompt_version": rec_set.prompt_version,
+            "recommendations": rec_items,
+        }
+
+
+def get_avoid_notes_query(engine) -> list[dict[str, Any]]:
+    """Return groups with >=3 posts performing <= 0.8x baseline."""
+    from .recommend import generate_evidence_recommendations
+    with session_factory(engine)() as session:
+        _, avoid = generate_evidence_recommendations(session, "current")
+        return avoid
+
+
+def get_follow_through_scoreboard(engine) -> dict[str, Any]:
+    """Scoreboard metrics and history of recommendations across all weeks."""
+    with session_factory(engine)() as session:
+        recs = session.scalars(
+            select(Recommendation)
+            .join(RecommendationSet, Recommendation.set_id == RecommendationSet.id)
+            .order_by(RecommendationSet.generated_at.desc(), Recommendation.rank.asc())
+        ).all()
+
+        total = len(recs)
+        followed = [r for r in recs if r.status == "followed"]
+        beat_normal = [r for r in followed if r.outcome_ratio is not None and r.outcome_ratio >= 1.0]
+
+        records = []
+        for r in recs:
+            records.append({
+                "week_key": r.recommendation_set.week_key,
+                "rank": r.rank,
+                "kind": r.kind,
+                "topic": r.topic,
+                "format": r.format,
+                "weekday": r.weekday,
+                "status": r.status,
+                "matched_pub_id": r.matched_publication_id,
+                "outcome_ratio": r.outcome_ratio,
+                "is_ai_text": r.is_ai_text,
+                "text": r.text,
+            })
+
+        return {
+            "total_recommended": total,
+            "followed_count": len(followed),
+            "beat_normal_count": len(beat_normal),
+            "beat_normal_rate": round((len(beat_normal) / len(followed) * 100), 1) if followed else 0.0,
+            "records": records,
+        }
+
+
+def get_recommendation_history(engine) -> list[dict[str, Any]]:
+    """List of all recommendation sets in reverse chronological order."""
+    with session_factory(engine)() as session:
+        sets = session.scalars(
+            select(RecommendationSet).order_by(RecommendationSet.generated_at.desc())
+        ).all()
+        return [
+            {
+                "id": s.id,
+                "week_key": s.week_key,
+                "mode": s.mode,
+                "generated_at": _format_time_12h(s.generated_at),
+                "item_count": len(s.recommendations),
+            }
+            for s in sets
+        ]
+
+
+def get_post_feedback_map(engine) -> dict[int, list[dict[str, Any]]]:
+    """Mapping from publication_id to feedback entries."""
+    with session_factory(engine)() as session:
+        feedbacks = session.scalars(
+            select(PostFeedback).order_by(PostFeedback.generated_at.desc())
+        ).all()
+
+        fb_map: dict[int, list[dict[str, Any]]] = {}
+        for fb in feedbacks:
+            fb_map.setdefault(fb.publication_id, []).append({
+                "basis_checkpoint": fb.basis_checkpoint,
+                "text": fb.text,
+                "is_ai_text": fb.is_ai_text,
+                "generated_at": _format_time_12h(fb.generated_at),
+            })
+        return fb_map
+
 

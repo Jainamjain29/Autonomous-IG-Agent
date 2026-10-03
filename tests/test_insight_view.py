@@ -302,7 +302,7 @@ class AlembicVersionTests(unittest.TestCase):
     """Test alembic version checking."""
 
     def test_alembic_at_head(self):
-        with tempfile.TemporaryDirectory() as tmp:
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
             db_path = os.path.join(tmp, "versioned.db")
             engine = make_engine(sqlite_url(db_path))
             from insight.db import upgrade_db
@@ -315,7 +315,7 @@ class AlembicVersionTests(unittest.TestCase):
             engine.dispose()
 
     def test_alembic_not_at_head(self):
-        with tempfile.TemporaryDirectory() as tmp:
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
             db_path = os.path.join(tmp, "old.db")
             engine = make_engine(sqlite_url(db_path))
             from insight.db import upgrade_db
@@ -332,7 +332,7 @@ class AlembicVersionTests(unittest.TestCase):
             engine.dispose()
 
     def test_no_alembic_table(self):
-        with tempfile.TemporaryDirectory() as tmp:
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
             db_path = os.path.join(tmp, "noalembic.db")
             engine = init_db(make_engine(sqlite_url(db_path)))
             # init_db does create_all but no alembic_version table
@@ -643,6 +643,7 @@ class StreamlitRenderTests(unittest.TestCase):
                 self.assertIn("📈 Account", tab_labels)
                 self.assertIn("🎯 Performance", tab_labels)
                 self.assertIn("👥 Audience", tab_labels)
+                self.assertIn("💡 Recommendations", tab_labels)
                 self.assertIn("🏥 Data Health", tab_labels)
             finally:
                 if at is not None:

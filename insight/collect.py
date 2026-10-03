@@ -390,6 +390,21 @@ class Collector:
                 except Exception as aud_err:
                     self.logger.warning(f"[collect] Audience tagging error (non-fatal): {aud_err}")
 
+            # 8. Recommendations, post feedback, and follow-through tracking
+            if not self.dry_run:
+                try:
+                    from .recommend import (
+                        generate_all_post_feedback,
+                        generate_weekly_recommendation_set,
+                        reconcile_follow_through,
+                    )
+                    generate_weekly_recommendation_set(session, now=now)
+                    generate_all_post_feedback(session, now=now)
+                    reconcile_follow_through(session, now=now)
+                    session.flush()
+                except Exception as rec_err:
+                    self.logger.warning(f"[collect] Recommendation generation error (non-fatal): {rec_err}")
+
             if self.dry_run:
                 session.rollback()
                 self.logger.info("[collect] DRY-RUN mode: rolled back all changes.")

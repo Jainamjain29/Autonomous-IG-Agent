@@ -88,7 +88,7 @@ class AnalysisMathTests(unittest.TestCase):
     def test_dimension_helpers(self):
         # IST 08:30 is 03:00 UTC
         morning_utc = datetime(2026, 10, 1, 3, 0, tzinfo=UTC)
-        self.assertEqual(analysis.get_posting_hour_block(morning_utc), "Morning (06:00-11:59)")
+        self.assertEqual(analysis.get_posting_hour_block(morning_utc), "Morning (6:00 AM–11:59 AM)")
         self.assertEqual(analysis.get_weekday_name(morning_utc), "Thursday")
 
         # Caption length
