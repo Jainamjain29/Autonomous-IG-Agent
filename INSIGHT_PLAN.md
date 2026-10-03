@@ -29,9 +29,9 @@ it can later move into a separate SaaS repo unchanged.
 | # | Step | Status |
 |---|------|--------|
 | 1 | Foundation: schema, metric dictionary, adapter interface, checkpoints, fixtures, FakeAdapter | **done** |
-| 2 | Instagram collector + snapshot scheduler | next |
-| 3 | Basic metrics view | |
-| 4 | Performance analysis | |
+| 2 | Instagram collector + snapshot scheduler | **done** |
+| 3 | Basic metrics view | **done** |
+| 4 | Performance analysis | next |
 | 5 | Comments collector + audience intelligence | |
 | 6 | Recommendations | |
 | 7 | Full reports + alerts | |
@@ -72,6 +72,8 @@ insight/
   http_client.py     Reusable GraphClient with retry, backoff, 200-call cap, Meta usage header throttling
   probe.py           Live probe CLI (python -m insight.probe) validating dictionary names
   collect.py         Collector CLI (python -m insight.collect [--dry-run])
+  queries.py         Pure read functions returning plain data / DataFrames (no Streamlit import)
+  view.py            Streamlit metrics view (streamlit run insight/view.py)
   alembic.ini        Alembic configuration for insight migrations
   migrations/        Alembic migration environment and versioned scripts
     env.py
@@ -190,6 +192,13 @@ powershell -ExecutionPolicy Bypass -File scripts/install_collector_task.ps1
 powershell -ExecutionPolicy Bypass -File scripts/uninstall_collector_task.ps1
 ```
 
+## How to run the view
+
+```bash
+# Start the Streamlit metrics dashboard (read-only)
+streamlit run insight/view.py
+```
+
 ## Configuration
 
 | Variable | Purpose |
@@ -274,3 +283,37 @@ The full suite (108 existing + 49 new) passes.
 **Tests**
 - 29 new tests across `tests/test_insight_probe.py` (18 tests) and `tests/test_insight_collector.py` (11 tests).
 - Total suite: 186 tests passing cleanly.
+
+### Step 3: Basic Metrics View (2026-10-03)
+
+**Built**
+- Pure read query module `insight/queries.py`:
+  - No Streamlit import; returns plain data structures and dictionaries.
+  - Formats timestamps in Asia/Kolkata (IST) 12-hour format, human-readable ages, and watch times in seconds (`.1f`s).
+  - Missing metric values rendered as `"—"`, zero rendered as `"0"`.
+  - Parsers for rotating collector log summary lines (last 20 runs) with error handling.
+  - Overdue checkpoint detection using the existing `evaluate_checkpoints()` helper.
+- Standalone Streamlit dashboard `insight/view.py` (`streamlit run insight/view.py`):
+  - Strictly read-only connection via `make_readonly_engine()` (`mode=ro` URI). Never executes Alembic migrations or triggers collections.
+  - Pre-flight checks: clean warning if database or publications are missing; warning banner if Alembic migration is not at head.
+  - Concurrency safety: SQLite busy timeout set to 10s (`PRAGMA busy_timeout=10000`) across all engines in `insight/db.py`; short-lived read connections ensure background collector writes never fail with "database is locked".
+  - Caching & Refresh: query wrappers use `@st.cache_data(ttl=60)`; includes manual "🔄 Refresh" button that invalidates cache and opens a fresh read connection.
+  - Three tabs:
+    - **Posts**: Summary row per publication with real age, caption, permalink, and per-checkpoint metric values (1h, 24h, 48h, 7d, 28d) with completeness markers (✅ complete, ⏰ delayed, ❌ unavailable, ⏳ not due yet) plus expander showing all metrics × snapshots with real age at collection.
+    - **Account**: Daily metrics table and line chart (reach, views, profile visits; followers strictly excluded) + separate followers-over-time table and chart from adhoc snapshots.
+    - **Data Health**: Collector run log table (last 20 runs) with warning if last run >90 min ago; snapshot completeness breakdown; overdue checkpoint alerts; raw response count and latest fetch time.
+
+**Tests**
+- 39 new tests in `tests/test_insight_view.py`:
+  - Query function return shapes and values.
+  - Read-only SQLite enforcement (write attempts fail with OperationalError).
+  - Empty and missing DB handling.
+  - Alembic version head check and mismatch detection.
+  - IST 12-hour datetime and duration age formatting.
+  - Missing values show `"—"` while zeroes show `"0"`.
+  - Log summary parsing on real collector log line fixtures.
+  - Overdue checkpoint detection using checkpoint evaluation logic.
+  - Concurrency: read-only connection open during concurrent write does not block write.
+  - Verification that daily account queries never return followers.
+- Total suite: **227 tests passing cleanly** in 14.37s.
+
