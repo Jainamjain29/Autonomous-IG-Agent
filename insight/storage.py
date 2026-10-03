@@ -3,7 +3,7 @@ from sqlalchemy import select
 
 from .checkpoints import POST_CHECKPOINTS, period_key_for
 from .models import Account, Comment, MetricSnapshot, MetricValue, Publication, RawResponse
-from .privacy import redact_secrets
+from .privacy import redact_secrets, redact_user_identifiers
 from .timeutil import to_utc
 
 
@@ -38,8 +38,12 @@ def upsert_publication(session, account, record, content_id=None):
 
 
 def save_raw_response(session, platform, endpoint, payload, fetched_at):
-    raw = RawResponse(platform=platform, endpoint=endpoint, fetched_at=fetched_at,
-                      payload=redact_secrets(payload))
+    raw = RawResponse(
+        platform=platform,
+        endpoint=endpoint,
+        fetched_at=fetched_at,
+        payload=redact_secrets(redact_user_identifiers(payload)),
+    )
     session.add(raw)
     session.flush()
     return raw
@@ -101,10 +105,14 @@ def save_snapshot(session, *, checkpoint, collected_at, result=None, publication
 
 
 def save_comment(session, publication, record):
-    """Store a CommentRecord. Returns (comment, created). Parents must be saved first."""
+    """Store or update a CommentRecord. Returns (comment, created). Parents must be saved first."""
     existing = session.scalar(select(Comment).filter_by(
         platform=publication.platform, platform_comment_id=record.platform_comment_id))
     if existing is not None:
+        if record.like_count is not None and record.like_count != existing.like_count:
+            existing.like_count = record.like_count
+        if getattr(record, "is_own_account", False) and not existing.is_own_account:
+            existing.is_own_account = True
         return existing, False
     parent_id = None
     if record.parent_platform_comment_id:
@@ -122,7 +130,11 @@ def save_comment(session, publication, record):
         like_count=record.like_count,
         author_hash=record.author_hash,
         parent_comment_id=parent_id,
+        is_own_account=bool(getattr(record, "is_own_account", False)),
     )
     session.add(comment)
     session.flush()
     return comment, True
+
+
+upsert_comment = save_comment

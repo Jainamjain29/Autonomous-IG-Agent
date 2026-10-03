@@ -17,7 +17,7 @@ from .checkpoints import (
     POST_CHECKPOINTS,
     evaluate_checkpoints,
 )
-from .db import REPO_ROOT, make_readonly_engine
+from .db import REPO_ROOT, make_readonly_engine, session_factory
 from .models import (
     Account,
     MetricSnapshot,
@@ -43,7 +43,7 @@ from .analysis import (
 # ── Display configuration ──────────────────────────────────────────────
 DISPLAY_TIMEZONE = timezone(timedelta(hours=5, minutes=30))  # Asia/Kolkata
 DISPLAY_TZ_NAME = "IST"
-ALEMBIC_HEAD = "0002_post_tags"
+ALEMBIC_HEAD = "0003_comments_and_audience"
 LOG_PATH = os.path.join(REPO_ROOT, "data", "logs", "collect.log")
 
 # Post metrics in display order
@@ -373,10 +373,13 @@ def get_account_info(engine) -> dict[str, Any] | None:
 # Matches: [2026-10-02 23:44:29,490] INFO: [collect] OK: synced=2 snap_new=0 ...
 _LOG_OK_RE = re.compile(
     r"\[(?P<ts>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d+)\] INFO: \[collect\] OK: "
-    r"synced=(?P<synced>\d+) (?:tagged=(?P<tagged>\d+) )?snap_new=(?P<snap_new>\d+) "
+    r"synced=(?P<synced>\d+) (?:tagged=(?P<tagged>\d+) )?"
+    r"(?:comments=(?P<comments>\d+) )?(?:labelled=(?P<labelled>\d+) )?"
+    r"snap_new=(?P<snap_new>\d+) "
     r"snap_unavail=(?P<snap_unavail>\d+) errors=(?P<errors>\d+) "
     r"calls=(?P<calls>\d+)/(?P<call_cap>\d+) elapsed=(?P<elapsed>[\d.]+)s"
 )
+
 
 # Matches error/fatal lines
 _LOG_ERROR_RE = re.compile(
@@ -400,11 +403,15 @@ def parse_collect_log(log_path: str | None = None) -> list[dict[str, Any]]:
                 # Parse as naive UTC (collector logs in UTC)
                 ts = datetime.strptime(ts_str[:19], "%Y-%m-%d %H:%M:%S").replace(tzinfo=UTC)
                 tagged_val = int(m.group("tagged")) if m.group("tagged") is not None else 0
+                comments_val = int(m.group("comments")) if m.group("comments") is not None else 0
+                labelled_val = int(m.group("labelled")) if m.group("labelled") is not None else 0
                 entries.append({
                     "time": ts,
                     "status": "OK",
                     "synced": int(m.group("synced")),
                     "tagged": tagged_val,
+                    "comments": comments_val,
+                    "labelled": labelled_val,
                     "snap_new": int(m.group("snap_new")),
                     "snap_unavail": int(m.group("snap_unavail")),
                     "errors": int(m.group("errors")),
@@ -421,6 +428,8 @@ def parse_collect_log(log_path: str | None = None) -> list[dict[str, Any]]:
                     "status": "FAILED",
                     "synced": 0,
                     "tagged": 0,
+                    "comments": 0,
+                    "labelled": 0,
                     "snap_new": 0,
                     "snap_unavail": 0,
                     "errors": 1,
@@ -553,6 +562,50 @@ def get_comparison_breakdowns(engine) -> dict[str, list[dict[str, Any]]]:
         "format": group_comparison(posts, lambda p: p["tags"].get("format", {}).get("value")),
         "hook": group_comparison(posts, lambda p: p["tags"].get("hook", {}).get("value")),
     }
+
+
+# ── Audience Intelligence Queries ──────────────────────────────────────
+
+def get_audience_overview_query(engine) -> dict[str, Any]:
+    """Overview stats and confidence tier for audience comments."""
+    from .audience import get_audience_overview
+    with session_factory(engine)() as session:
+        return get_audience_overview(session)
+
+
+def get_needs_reply_queue(engine) -> list[dict[str, Any]]:
+    """Comments requiring reply that haven't received an own-account response yet."""
+    from .audience import get_needs_reply_comments
+    with session_factory(engine)() as session:
+        return get_needs_reply_comments(session)
+
+
+def get_ranked_ideas(engine) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Ranked content ideas (>=2 authors) and single mentions (<2 authors)."""
+    from .audience import rank_content_ideas
+    with session_factory(engine)() as session:
+        return rank_content_ideas(session)
+
+
+def get_sentiment_breakdown(engine) -> dict[str, Any]:
+    """Sentiment breakdown excluding 'unknown' and own-account."""
+    from .audience import compute_sentiment_breakdown
+    with session_factory(engine)() as session:
+        return compute_sentiment_breakdown(session)
+
+
+def get_category_breakdown(engine) -> dict[str, Any]:
+    """Audience comment category distribution."""
+    from .audience import compute_category_breakdown
+    with session_factory(engine)() as session:
+        return compute_category_breakdown(session)
+
+
+def get_spam_abuse_comments_query(engine) -> list[dict[str, Any]]:
+    """Audience comments classified as spam or abuse."""
+    from .audience import get_spam_abuse_comments
+    with session_factory(engine)() as session:
+        return get_spam_abuse_comments(session)
 
 
 def get_growth_overview(engine) -> dict[str, Any]:

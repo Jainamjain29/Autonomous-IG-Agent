@@ -43,3 +43,35 @@ def redact_secrets(payload):
     if isinstance(payload, str):
         return _SECRET_IN_URL.sub(r"\1REDACTED", payload)
     return payload
+
+
+_USER_IDENTIFIER_KEYS = {
+    "username", "user_id", "author_id", "author_username", "owner_id", "account_id",
+}
+
+
+def redact_user_identifiers(payload):
+    """Strip or redact every user identifier (username, from.id, from.username, user_id, etc.) at any depth.
+    Keeps comment IDs intact.
+    """
+    if isinstance(payload, dict):
+        new_d = {}
+        for k, v in payload.items():
+            k_lower = k.lower()
+            if k_lower in _USER_IDENTIFIER_KEYS:
+                new_d[k] = "<redacted>"
+            elif k_lower in ("from", "user", "owner", "author"):
+                if isinstance(v, dict):
+                    new_d[k] = {
+                        sub_k: ("<redacted>" if sub_k.lower() in ("id", "username", "name", "handle", "pk") else redact_user_identifiers(sub_v))
+                        for sub_k, sub_v in v.items()
+                    }
+                else:
+                    new_d[k] = "<redacted>"
+            else:
+                new_d[k] = redact_user_identifiers(v)
+        return new_d
+    if isinstance(payload, list):
+        return [redact_user_identifiers(v) for v in payload]
+    return payload
+

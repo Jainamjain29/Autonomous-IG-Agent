@@ -26,7 +26,7 @@ from .checkpoints import DUE, MISSED, POST_CHECKPOINTS, UNRECOVERABLE, due_check
 from .db import REPO_ROOT, make_engine, session_factory, upgrade_db
 from .http_client import CallCapReached, GraphClient
 from .models import Account, MetricSnapshot, Publication
-from .storage import get_or_create_account, save_snapshot, upsert_publication
+from .storage import get_or_create_account, save_comment, save_snapshot, upsert_publication
 from .timeutil import UTC
 
 # Config: observed Meta API limit for account insights since parameter is 729 days (2 years)
@@ -36,17 +36,39 @@ LOCK_PATH = os.path.join(REPO_ROOT, "data", "insight.lock")
 LOG_PATH = os.path.join(REPO_ROOT, "data", "logs", "collect.log")
 
 
+class _StdoutStream:
+    def write(self, s: str) -> int:
+        return sys.stdout.write(s)
+
+    def flush(self) -> None:
+        sys.stdout.flush()
+
+
 def _setup_logger() -> logging.Logger:
     logger = logging.getLogger("insight.collect")
     logger.setLevel(logging.INFO)
-    if not logger.handlers:
+    logger.propagate = False
+
+    has_file = any(
+        isinstance(h, RotatingFileHandler)
+        or (isinstance(h, logging.FileHandler) and getattr(h, "baseFilename", None) == os.path.abspath(LOG_PATH))
+        for h in logger.handlers
+    )
+    has_stream = any(
+        isinstance(h, logging.StreamHandler)
+        and not isinstance(h, logging.FileHandler)
+        for h in logger.handlers
+    )
+
+    if not has_file:
         os.makedirs(os.path.dirname(LOG_PATH), exist_ok=True)
         fh = RotatingFileHandler(LOG_PATH, maxBytes=5 * 1024 * 1024, backupCount=3, encoding="utf-8")
         formatter = logging.Formatter("[%(asctime)s] %(levelname)s: %(message)s")
         fh.setFormatter(formatter)
         logger.addHandler(fh)
 
-        sh = logging.StreamHandler(sys.stdout)
+    if not has_stream:
+        sh = logging.StreamHandler(_StdoutStream())
         sh.setFormatter(logging.Formatter("%(message)s"))
         logger.addHandler(sh)
     return logger
@@ -86,11 +108,12 @@ def acquire_lock(lock_path: str = LOCK_PATH):
 
 
 class Collector:
-    def __init__(self, dry_run: bool = False, call_cap: int = 200, engine=None):
+    def __init__(self, dry_run: bool = False, call_cap: int = 200, engine=None, collect_comments: bool = True):
         self.dry_run = dry_run
         self.call_cap = call_cap
         self.engine = engine or make_engine()
-        self.logger = logging.getLogger("insight.collect")
+        self.collect_comments = collect_comments
+        self.logger = _setup_logger()
 
         host = db.get_setting("GRAPH_HOST") or "graph.instagram.com"
         version = db.get_setting("GRAPH_VERSION") or "v26.0"
@@ -113,6 +136,8 @@ class Collector:
         stats = {
             "posts_synced": 0,
             "tagged": 0,
+            "comments_new": 0,
+            "labelled": 0,
             "snap_new": 0,
             "snap_unavail": 0,
             "errors": 0,
@@ -133,6 +158,7 @@ class Collector:
                 label="account_profile",
             )
             handle = profile.get("username", "unknown") if status < 400 else "unknown"
+            self.adapter.own_handle = handle
             account = get_or_create_account(
                 session=session,
                 platform="instagram",
@@ -232,6 +258,19 @@ class Collector:
                             )
                             if created:
                                 stats["snap_unavail"] += 1
+
+                # Comments collection for posts <= 28 days old
+                if self.collect_comments and age <= timedelta(days=28):
+                    if not self.client.usage_throttled and self.client.call_count < self.client.call_cap:
+                        try:
+                            comment_records = self.adapter.fetch_comments(pub)
+                            for crec in comment_records:
+                                _, created = save_comment(session, pub, crec)
+                                if created:
+                                    stats["comments_new"] += 1
+                            session.flush()
+                        except Exception as c_err:
+                            self.logger.warning(f"[collect] Error fetching comments for {pub.platform_post_id}: {c_err}")
 
                 if self.client.usage_throttled:
                     self.logger.warning("[collect] Usage throttled >80%; pausing post checkpoint collection")
@@ -342,6 +381,15 @@ class Collector:
                     if created:
                         stats["snap_new"] += 1
 
+            # 7. AI Audience Labeling for unlabelled comments (max 100 per run)
+            if not self.dry_run and self.collect_comments:
+                try:
+                    from .audience import tag_unlabelled_comments
+                    stats["labelled"] = tag_unlabelled_comments(session, max_comments=100)
+                    session.flush()
+                except Exception as aud_err:
+                    self.logger.warning(f"[collect] Audience tagging error (non-fatal): {aud_err}")
+
             if self.dry_run:
                 session.rollback()
                 self.logger.info("[collect] DRY-RUN mode: rolled back all changes.")
@@ -359,12 +407,12 @@ class Collector:
             stats["elapsed"] = round(time.time() - start_time, 2)
 
         summary_line = (
-            f"[collect] OK: synced={stats['posts_synced']} tagged={stats['tagged']} snap_new={stats['snap_new']} "
-            f"snap_unavail={stats['snap_unavail']} errors={stats['errors']} "
+            f"[collect] OK: synced={stats['posts_synced']} tagged={stats['tagged']} "
+            f"comments={stats['comments_new']} labelled={stats['labelled']} "
+            f"snap_new={stats['snap_new']} snap_unavail={stats['snap_unavail']} errors={stats['errors']} "
             f"calls={stats['calls']}/{self.call_cap} elapsed={stats['elapsed']}s"
         )
         self.logger.info(summary_line)
-        print(summary_line)
         return stats
 
 

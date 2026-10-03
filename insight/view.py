@@ -41,6 +41,12 @@ from insight.queries import (
     get_posts_with_snapshots,
     get_raw_response_stats,
     get_snapshot_completeness_counts,
+    get_audience_overview_query,
+    get_needs_reply_queue,
+    get_ranked_ideas,
+    get_sentiment_breakdown,
+    get_category_breakdown,
+    get_spam_abuse_comments_query,
     last_successful_run,
     parse_collect_log,
     _format_time_12h,
@@ -149,6 +155,54 @@ def _cached_growth():
     if engine is None:
         return {}
     return get_growth_overview(engine)
+
+
+@st.cache_data(ttl=60)
+def _cached_audience_overview():
+    engine = _get_engine()
+    if engine is None:
+        return {"total_comments": 0, "total_labelled": 0, "confidence_tier": "not enough data"}
+    return get_audience_overview_query(engine)
+
+
+@st.cache_data(ttl=60)
+def _cached_needs_reply():
+    engine = _get_engine()
+    if engine is None:
+        return []
+    return get_needs_reply_queue(engine)
+
+
+@st.cache_data(ttl=60)
+def _cached_ranked_ideas():
+    engine = _get_engine()
+    if engine is None:
+        return ([], [])
+    return get_ranked_ideas(engine)
+
+
+@st.cache_data(ttl=60)
+def _cached_sentiment():
+    engine = _get_engine()
+    if engine is None:
+        return {"counts": {}, "percentages": {}, "total_valid": 0, "unknown_count": 0}
+    return get_sentiment_breakdown(engine)
+
+
+@st.cache_data(ttl=60)
+def _cached_category():
+    engine = _get_engine()
+    if engine is None:
+        return {"counts": {}, "percentages": {}, "total": 0}
+    return get_category_breakdown(engine)
+
+
+@st.cache_data(ttl=60)
+def _cached_spam_abuse():
+    engine = _get_engine()
+    if engine is None:
+        return []
+    return get_spam_abuse_comments_query(engine)
 
 
 # ── Pre-flight checks ─────────────────────────────────────────────────
@@ -602,6 +656,148 @@ def _render_performance_tab():
             st.table(int_rows)
 
 
+# ── Tab: Audience ──────────────────────────────────────────────────────
+
+def _render_audience_tab():
+    st.subheader("👥 Audience Intelligence")
+
+    ov = _cached_audience_overview()
+    needs_reply = _cached_needs_reply()
+    ideas, single_mentions = _cached_ranked_ideas()
+    sentiment = _cached_sentiment()
+    category = _cached_category()
+    spam_abuse = _cached_spam_abuse()
+
+    # 1. Confidence banner
+    if ov.get("confidence_tier") == "not enough data":
+        st.warning(
+            f"⚠️ **Not enough data** ({ov.get('total_comments', 0)}/20 audience comments). "
+            "Metrics and classifications shown below are preliminary signals."
+        )
+    else:
+        st.success(f"✅ **Full confidence** ({ov.get('total_comments', 0)} audience comments analyzed).")
+
+    # 2. Overview metrics
+    mcol1, mcol2, mcol3, mcol4 = st.columns(4)
+    with mcol1:
+        st.metric("Audience Comments", ov.get("total_comments", 0))
+    with mcol2:
+        st.metric("AI-Classified", ov.get("total_labelled", 0))
+    with mcol3:
+        st.metric("Needs Reply", len(needs_reply))
+    with mcol4:
+        st.metric("Content Ideas", len(ideas))
+
+    st.markdown("---")
+
+    # 3. Needs-Reply Queue
+    st.markdown("### 🚨 Needs Reply Queue")
+    st.caption("Action items for community engagement. Humans reply in the Instagram app; this agent never posts or replies.")
+
+    if not needs_reply:
+        st.info("No comments currently waiting for a reply. All caught up!")
+    else:
+        rows = []
+        for c in needs_reply:
+            time_str = _format_time_12h(c["created_at"])
+            link = f"[View Post]({c['publication_permalink']})" if c.get("publication_permalink") else "—"
+            rows.append({
+                "Comment": c["text"],
+                "Reason": c["reason"],
+                "Category": c["category"].capitalize(),
+                "Sentiment": c["sentiment"].capitalize(),
+                "Theme": c["theme"],
+                "Time (IST)": time_str,
+                "Likes": c["like_count"],
+                "Post Link": link,
+            })
+        st.table(rows)
+
+    st.markdown("---")
+
+    # 4. Content Ideas
+    st.markdown("### 💡 Content Ideas")
+    st.caption("Themes repeated by 2 or more distinct viewers qualify as actionable content ideas, ranked by demand.")
+
+    if not ideas:
+        st.info("No repeating content ideas yet (requires questions/requests from >=2 distinct viewers).")
+    else:
+        for idx, idea in enumerate(ideas, 1):
+            st.markdown(f"#### #{idx} {idea['theme']}")
+            st.caption(f"👥 **{idea['distinct_authors']} viewers** · 💬 {idea['comment_count']} comments · ❤️ {idea['total_likes']} likes · Latest: {_format_time_12h(idea['latest_comment_at'])}")
+            if idea["samples"]:
+                st.markdown("**Viewer questions/requests:**")
+                for s in idea["samples"]:
+                    st.markdown(f"- *\"{s}\"*")
+            st.markdown("")
+
+    if single_mentions:
+        with st.expander(f"🔍 Single Mentions ({len(single_mentions)} emerging topics from 1 viewer)"):
+            sm_rows = []
+            for sm in single_mentions:
+                sm_rows.append({
+                    "Theme": sm["theme"],
+                    "Comments": sm["comment_count"],
+                    "Likes": sm["total_likes"],
+                    "Sample": sm["samples"][0] if sm["samples"] else "—",
+                })
+            st.table(sm_rows)
+
+    st.markdown("---")
+
+    # 5. Sentiment and Category Breakdown
+    st.markdown("### 📊 Audience Sentiment & Categories")
+    bcol1, bcol2 = st.columns(2)
+
+    with bcol1:
+        st.markdown("#### Sentiment Distribution")
+        st.caption("Excludes 'unknown' and own-account comments.")
+        if sentiment.get("total_valid", 0) == 0:
+            st.info("No sentiment data available yet.")
+        else:
+            s_rows = []
+            for s_name in ("positive", "neutral", "negative"):
+                cnt = sentiment.get("counts", {}).get(s_name, 0)
+                pct = sentiment.get("percentages", {}).get(s_name, 0.0)
+                s_rows.append({
+                    "Sentiment": s_name.capitalize(),
+                    "Count": cnt,
+                    "Share": f"{pct:.1f}%",
+                })
+            st.table(s_rows)
+            if sentiment.get("unknown_count", 0) > 0:
+                st.caption(f"*Note: {sentiment['unknown_count']} comment(s) had unclassified/unknown sentiment.*")
+
+    with bcol2:
+        st.markdown("#### Category Breakdown")
+        st.caption("Distribution across the 8 taxonomy categories.")
+        if category.get("total", 0) == 0:
+            st.info("No category data available yet.")
+        else:
+            c_rows = []
+            for cat, cnt in sorted(category.get("counts", {}).items(), key=lambda x: x[1], reverse=True):
+                pct = category.get("percentages", {}).get(cat, 0.0)
+                c_rows.append({
+                    "Category": cat.capitalize(),
+                    "Count": cnt,
+                    "Share": f"{pct:.1f}%",
+                })
+            st.table(c_rows)
+
+    # 6. Filtered Spam & Abuse
+    if spam_abuse:
+        with st.expander(f"🛡️ Filtered Spam & Abuse ({len(spam_abuse)} comments)"):
+            sa_rows = []
+            for sa in spam_abuse:
+                sa_rows.append({
+                    "Text": sa["text"],
+                    "Flag": sa["category"].upper(),
+                    "Confidence": f"{sa['confidence']:.2f}",
+                    "Time (IST)": _format_time_12h(sa["created_at"]),
+                })
+            st.table(sa_rows)
+
+
 # ── Main ───────────────────────────────────────────────────────────────
 
 def main():
@@ -617,7 +813,9 @@ def main():
     if not _preflight():
         return
 
-    tab_posts, tab_account, tab_perf, tab_health = st.tabs(["📋 Posts", "📈 Account", "🎯 Performance", "🏥 Data Health"])
+    tab_posts, tab_account, tab_perf, tab_aud, tab_health = st.tabs([
+        "📋 Posts", "📈 Account", "🎯 Performance", "👥 Audience", "🏥 Data Health"
+    ])
 
     with tab_posts:
         _render_posts_tab()
@@ -627,6 +825,9 @@ def main():
 
     with tab_perf:
         _render_performance_tab()
+
+    with tab_aud:
+        _render_audience_tab()
 
     with tab_health:
         _render_health_tab()

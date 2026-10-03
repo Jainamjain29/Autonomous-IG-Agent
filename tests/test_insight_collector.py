@@ -43,35 +43,40 @@ class AlembicTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             db_path = os.path.join(tmp, "fresh.db")
             engine = make_engine(sqlite_url(db_path))
-            upgrade_db(engine)
+            try:
+                upgrade_db(engine)
 
-            tables = set(inspect(engine).get_table_names())
-            expected = {
-                "accounts",
-                "publications",
-                "metric_definitions",
-                "raw_responses",
-                "metric_snapshots",
-                "metric_values",
-                "comments",
-                "alembic_version",
-                "post_tags",
-            }
-            self.assertEqual(tables, expected)
-            engine.dispose()
+                tables = set(inspect(engine).get_table_names())
+                expected = {
+                    "accounts",
+                    "publications",
+                    "metric_definitions",
+                    "raw_responses",
+                    "metric_snapshots",
+                    "metric_values",
+                    "comments",
+                    "alembic_version",
+                    "post_tags",
+                    "comment_labels",
+                }
+                self.assertEqual(tables, expected)
+            finally:
+                engine.dispose()
 
     def test_autogenerate_produces_no_changes(self):
         """Autogenerate against models after 'upgrade head' produces no schema diffs."""
         with tempfile.TemporaryDirectory() as tmp:
             db_path = os.path.join(tmp, "autogen.db")
             engine = make_engine(sqlite_url(db_path))
-            upgrade_db(engine)
+            try:
+                upgrade_db(engine)
 
-            with engine.connect() as conn:
-                ctx = MigrationContext.configure(conn)
-                diff = compare_metadata(ctx, Base.metadata)
-                self.assertEqual(diff, [], f"Unexpected schema diff: {diff}")
-            engine.dispose()
+                with engine.connect() as conn:
+                    ctx = MigrationContext.configure(conn)
+                    diff = compare_metadata(ctx, Base.metadata)
+                    self.assertEqual(diff, [], f"Unexpected schema diff: {diff}")
+            finally:
+                engine.dispose()
 
 
 class MediaTypeMappingTests(unittest.TestCase):
@@ -227,13 +232,15 @@ class CollectorIntegrationTests(unittest.TestCase):
         # 2. list_publications
         # 3. post_insights (for adhoc backfill)
         # 4. post_insights (for 1h delayed)
-        # 5. account_insights (yesterday daily)
-        # 6. followers (adhoc)
+        # 5. comments (reel_101)
+        # 6. account_insights (yesterday daily)
+        # 7. followers (adhoc)
         mock_get.side_effect = [
             _mock_response(200, account_profile),
             _mock_response(200, media_page),
             _mock_response(200, post_insights),
             _mock_response(200, post_insights),
+            _mock_response(200, {"data": []}),
             _mock_response(200, account_insights),
             _mock_response(200, account_profile),
         ]
@@ -380,19 +387,23 @@ class CollectorIntegrationTests(unittest.TestCase):
         # First run responses:
         # 1. account_profile
         # 2. media_page (reel_202 age 45m: <1h, no checkpoints due yet)
-        # 3. account_insights (yesterday)
-        # 4. account_profile (followers)
+        # 3. reel_202 comments
+        # 4. account_insights (yesterday)
+        # 5. account_profile (followers)
         # Second run responses:
-        # 5. account_profile
-        # 6. media_page
+        # 6. account_profile
+        # 7. media_page
+        # 8. reel_202 comments
         mock_get.side_effect = [
             _mock_response(200, account_profile),
             _mock_response(200, media_page),
+            _mock_response(200, {"data": []}),
             _mock_response(200, account_insights),
             _mock_response(200, account_profile),
             # Second run responses
             _mock_response(200, account_profile),
             _mock_response(200, media_page),
+            _mock_response(200, {"data": []}),
         ]
 
         with mock.patch("insight.collect.datetime") as mock_dt:
@@ -681,6 +692,52 @@ class CollectorIntegrationTests(unittest.TestCase):
                 ).fetchone()
                 expected_earliest = (now_fixed.date() - timedelta(days=729)).isoformat()
                 self.assertEqual(daily_snap.period_key, expected_earliest)
+
+    @mock.patch("insight.collect.db.get_setting")
+    @mock.patch("insight.http_client.requests.get")
+    def test_summary_logged_and_printed_exactly_once_on_repeated_runs(self, mock_get, mock_db_setting):
+        """Collector summary line prints to stdout and logs to file exactly once per run on repeated runs."""
+        mock_db_setting.side_effect = self._settings
+        import io
+        import logging
+        from contextlib import redirect_stdout
+        from insight.collect import _setup_logger
+
+        logger = _setup_logger()
+        # Verify logger.propagate is False so root logger doesn't duplicate
+        self.assertFalse(logger.propagate)
+
+        # Call _setup_logger multiple times to ensure handlers are not duplicated
+        _setup_logger()
+        _setup_logger()
+        stream_handlers = [
+            h for h in logger.handlers
+            if isinstance(h, logging.StreamHandler) and not isinstance(h, logging.FileHandler)
+        ]
+        file_handlers = [h for h in logger.handlers if isinstance(h, logging.FileHandler)]
+        self.assertEqual(len(stream_handlers), 1)
+        self.assertEqual(len(file_handlers), 1)
+
+        def _fake_get(url, params=None, **kwargs):
+            if "insights" in url:
+                return _mock_response(200, {"data": []})
+            if "media" in url:
+                return _mock_response(200, {"data": []})
+            return _mock_response(200, {"id": "17841440", "username": "streamovate", "followers_count": 50})
+
+        mock_get.side_effect = _fake_get
+
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            c1 = Collector(dry_run=False, call_cap=10, engine=self.engine)
+            c1.collect()
+            c2 = Collector(dry_run=False, call_cap=10, engine=self.engine)
+            c2.collect()
+
+        output = buf.getvalue()
+        summary_occurrences = [line for line in output.splitlines() if "[collect] OK:" in line]
+        # Exactly 2 occurrences total (1 per run), not 6
+        self.assertEqual(len(summary_occurrences), 2)
 
 
 if __name__ == "__main__":

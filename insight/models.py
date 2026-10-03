@@ -9,6 +9,7 @@ from typing import Optional
 from sqlalchemy import (
     JSON,
     BigInteger,
+    Boolean,
     CheckConstraint,
     Float,
     ForeignKey,
@@ -176,6 +177,34 @@ class Comment(Base):
     # SHA-256(salt + username). Raw usernames are never stored.
     author_hash: Mapped[Optional[str]] = mapped_column(String(64))
     parent_comment_id: Mapped[Optional[int]] = mapped_column(ForeignKey("comments.id"))
+    is_own_account: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
+
+    labels: Mapped[list["CommentLabel"]] = relationship(back_populates="comment", cascade="all, delete-orphan")
+
+
+class CommentLabel(Base):
+    """Audience intelligence classification (category, sentiment, needs_reply, theme) for a comment."""
+
+    __tablename__ = "comment_labels"
+    __table_args__ = (
+        UniqueConstraint("comment_id", "prompt_version", name="uq_comment_labels_comment_version"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    comment_id: Mapped[int] = mapped_column(ForeignKey("comments.id", ondelete="CASCADE"))
+    category: Mapped[str] = mapped_column(String(32))
+    sentiment: Mapped[str] = mapped_column(String(16))
+    confidence: Mapped[float] = mapped_column(Float)
+    needs_reply: Mapped[bool] = mapped_column(Boolean)
+    needs_reply_reason: Mapped[Optional[str]] = mapped_column(String(255))
+    theme: Mapped[str] = mapped_column(String(64))
+    source: Mapped[str] = mapped_column(String(32), default="ai")
+    model: Mapped[str] = mapped_column(String(64))
+    prompt_version: Mapped[str] = mapped_column(String(16))
+    input_hash: Mapped[str] = mapped_column(String(64))
+    labelled_at: Mapped[datetime] = mapped_column(UTCDateTime())
+
+    comment: Mapped["Comment"] = relationship(back_populates="labels")
 
 
 class PostTag(Base):

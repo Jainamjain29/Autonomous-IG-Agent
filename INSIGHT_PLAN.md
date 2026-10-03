@@ -358,4 +358,43 @@ The full suite (108 existing + 49 new) passes.
 - 16 new tests in `tests/test_insight_analysis.py` covering mathematics, confidence tiers, classification, pace flags, groupings, taxonomy validation, re-tag rules, collector tagging error resilience, migration 0002, and Streamlit `AppTest` rendering.
 - Total suite: **245 tests passing cleanly** in 16.06s.
 
+### Step 5: Comments Collector + Audience Intelligence (2026-10-03)
+
+**Built**
+- **Comment Taxonomy Seed** (`insight/seeds/comment_taxonomy.v1.json`):
+  - `category`: `question`, `request`, `praise`, `complaint`, `feedback`, `spam`, `abuse`, `other` (out-of-bounds -> `other` with confidence 0.0).
+  - `sentiment`: `positive`, `neutral`, `negative`, `unknown` (out-of-bounds -> `unknown`; excluded from sentiment stats).
+- **Instagram Comments Ingestion** (`insight/adapters/instagram.py`):
+  - `fetch_comments()`: full pagination of top-level comments and nested replies.
+  - Own-account detection: compares username against account handle at ingestion *before* hashing and redaction. Sets `is_own_account = True`.
+  - Tolerates missing fields (missing usernames, replies, or counts) gracefully.
+  - Collector integration: runs for all posts <= 28 days old every run; upserts comments by `platform_comment_id`.
+- **Privacy Guarantees** (`insight/privacy.py` & `insight/storage.py`):
+  - Deep redaction via `redact_user_identifiers()` strips all usernames, `user_id`, `from.id`, `from.username` at any depth from raw responses and API payloads before SQLite storage.
+  - Author privacy: `comments.author_hash` stores SHA-256(salt + normalized username). Zero raw usernames exist anywhere in the SQLite database (verified by database-wide PRAGMA scan test).
+- **Audience Intelligence & AI Labeling** (`insight/audience.py`):
+  - Classifies unlabelled comments in batches of up to 20 (max 100/run) with a 30s Gemini timeout.
+  - Contextual prompt includes existing database themes to avoid synonym proliferation.
+  - Pure analysis helpers:
+    - Needs-reply queue: flags high-intent questions and requests; automatically cleared when an own-account reply exists under the comment; excludes spam/abuse.
+    - Content ideas: groups questions and requests by theme; enforces 2-author threshold (themes with >=2 distinct authors qualify as actionable ideas; 1-author themes placed in "Single Mentions").
+    - Sentiment & category breakdown (excluding unknown sentiment and own account).
+    - Spam and abuse detection list.
+- **Alembic Migration 0003** (`0003_comments_and_audience.py`):
+  - Added `is_own_account` column to `comments`.
+  - Created `comment_labels` table with unique constraint on `(comment_id, prompt_version)`.
+- **Streamlit Audience Tab** (`insight/view.py`):
+  - Added "👥 Audience" tab:
+    - Confidence tier banner (<20 audience comments = "not enough data").
+    - Metric overview cards (Audience Comments, AI-Classified, Needs Reply, Content Ideas).
+    - Needs Reply Queue table with IST 12-hour timestamps and post links (zero usernames displayed).
+    - Content Ideas cards with viewer demand metrics and sample viewer questions + single mentions expander.
+    - Sentiment distribution and category breakdown tables.
+    - Filtered spam & abuse expander.
+
+**Tests**
+- 11 new tests in `tests/test_insight_audience.py` covering pagination, nested replies, reply under old comment, own-account identification, database-wide privacy zero-raw-username verification, taxonomy validation fallbacks, needs-reply clearing, content ideas ranking with 2-author threshold, sentiment breakdown excluding unknown, and Streamlit `AppTest` rendering with 5 tabs.
+- Full suite: **256 tests passing cleanly** in 17.21s.
+
+
 

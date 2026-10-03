@@ -50,6 +50,7 @@ class CommentRecord:
     author_hash: str | None
     like_count: int | None = None
     parent_platform_comment_id: str | None = None
+    is_own_account: bool = False
 
 
 class PlatformAdapter(ABC):
@@ -71,7 +72,7 @@ class PlatformAdapter(ABC):
     def fetch_account_metrics(self) -> MetricResult: ...
 
     @abstractmethod
-    def fetch_comments(self, publication, since: datetime) -> list[CommentRecord]: ...
+    def fetch_comments(self, publication, since: datetime | None = None) -> list[CommentRecord]: ...
 
     def build_result(self, endpoint, fetched_at, raw_payload, flat_metrics, applies_to):
         """Shared helper: map {platform_name: value} through the dictionary."""
