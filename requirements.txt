@@ -6,8 +6,10 @@ requests
 pyngrok
 python-dotenv
 
-# AI (agent_brain.py, assembly_line.py)
-# TODO: pin grpcio and google-generativeai to the known-working versions (to be supplied)
+# AI (agent_brain.py, assembly_line.py, insight/)
+# Known-working Gemini stack (run scripts/restore_pins.ps1 to install):
+# google-generativeai==0.8.6, google-ai-generativelanguage==0.6.15, google-api-core==2.33.0,
+# grpcio==1.60.0, grpcio-status==1.71.2, protobuf==5.29.6
 # Pin pyarrow to 19.0.1: newer releases (e.g. 25.0+) contain DLLs blocked by Windows AppLocker / Smart App Control
 pyarrow==19.0.1
 google-generativeai

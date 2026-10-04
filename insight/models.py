@@ -302,3 +302,41 @@ class PostFeedback(Base):
     publication: Mapped["Publication"] = relationship()
 
 
+class Alert(Base):
+    """System and performance alerts for the dashboard."""
+
+    __tablename__ = "alerts"
+    __table_args__ = (
+        UniqueConstraint("dedupe_key", name="uq_alerts_dedupe_key"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    kind: Mapped[str] = mapped_column(String(64), index=True)
+    severity: Mapped[str] = mapped_column(String(16))  # 'info', 'warning', 'critical'
+    dedupe_key: Mapped[str] = mapped_column(String(128))
+    title: Mapped[str] = mapped_column(String(255))
+    body: Mapped[str] = mapped_column(Text)
+    facts_json: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime())
+    resolved_at: Mapped[Optional[datetime]] = mapped_column(UTCDateTime(), nullable=True)
+
+
+class WeeklyReport(Base):
+    """Cached weekly executive report with deterministic metrics and AI/template summary."""
+
+    __tablename__ = "weekly_reports"
+    __table_args__ = (
+        UniqueConstraint("week_key", "prompt_version", name="uq_weekly_reports_week_ver"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    week_key: Mapped[str] = mapped_column(String(16), index=True)  # e.g. '2026-W40'
+    prompt_version: Mapped[str] = mapped_column(String(16))
+    model: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    generated_at: Mapped[datetime] = mapped_column(UTCDateTime())
+    facts_json: Mapped[str] = mapped_column(Text)
+    summary_text: Mapped[str] = mapped_column(Text)
+    is_ai_summary: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+

@@ -5,6 +5,7 @@ All DB access uses short-lived read-only connections (open, query, close).
 """
 from __future__ import annotations
 
+import json
 import os
 import re
 from datetime import datetime, timedelta, timezone
@@ -22,6 +23,8 @@ from .models import (
     Account,
     MetricSnapshot,
     MetricValue,
+    Alert,
+    WeeklyReport,
     PostFeedback,
     PostTag,
     Publication,
@@ -46,7 +49,7 @@ from .analysis import (
 # ── Display configuration ──────────────────────────────────────────────
 DISPLAY_TIMEZONE = timezone(timedelta(hours=5, minutes=30))  # Asia/Kolkata
 DISPLAY_TZ_NAME = "IST"
-ALEMBIC_HEAD = "0004_recommendations"
+ALEMBIC_HEAD = "0005_reports_and_alerts"
 LOG_PATH = os.path.join(REPO_ROOT, "data", "logs", "collect.log")
 
 # Post metrics in display order
@@ -755,5 +758,57 @@ def get_post_feedback_map(engine) -> dict[int, list[dict[str, Any]]]:
                 "generated_at": _format_time_12h(fb.generated_at),
             })
         return fb_map
+
+
+def get_db_alerts(engine) -> list[dict[str, Any]]:
+    """Return all alerts from DB ordered by created_at desc."""
+    with session_factory(engine)() as session:
+        alerts = session.scalars(select(Alert).order_by(Alert.created_at.desc())).all()
+        return [
+            {
+                "id": a.id,
+                "kind": a.kind,
+                "severity": a.severity,
+                "dedupe_key": a.dedupe_key,
+                "title": a.title,
+                "body": a.body,
+                "facts": json.loads(a.facts_json) if a.facts_json else {},
+                "created_at": a.created_at,
+                "created_at_ist": _format_time_12h(a.created_at),
+                "resolved_at": a.resolved_at,
+                "is_resolved": (a.resolved_at is not None),
+            }
+            for a in alerts
+        ]
+
+
+def get_available_report_weeks_query(engine) -> list[str]:
+    """Return available ISO weeks for reports."""
+    from .report import get_available_weeks
+    with session_factory(engine)() as session:
+        return get_available_weeks(session)
+
+
+def get_weekly_report_query(engine, week_key: str) -> dict[str, Any]:
+    """Compute and format full weekly report for display and download."""
+    from .report import (
+        compute_weekly_report_data,
+        generate_report_summary,
+        generate_report_markdown,
+        generate_report_html,
+    )
+    with session_factory(engine)() as session:
+        data = compute_weekly_report_data(session, week_key)
+        summary, is_ai = generate_report_summary(session, data, save_to_db=False)
+        md = generate_report_markdown(data, summary)
+        html = generate_report_html(data, summary)
+        return {
+            "data": data,
+            "summary_text": summary,
+            "is_ai_summary": is_ai,
+            "markdown": md,
+            "html": html,
+        }
+
 
 

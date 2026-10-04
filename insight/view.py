@@ -53,11 +53,16 @@ from insight.queries import (
     get_post_feedback_map,
     get_recommendation_history,
     get_recommendation_overview,
+    get_db_alerts,
+    get_available_report_weeks_query,
+    get_weekly_report_query,
     last_successful_run,
     parse_collect_log,
     _format_time_12h,
     _time_ago,
 )
+from insight.alerts import evaluate_view_time_system_alerts
+from insight.view_state import dismiss_alert, load_view_state, mark_alerts_seen
 from insight.timeutil import UTC
 
 # ── Page config ────────────────────────────────────────────────────────
@@ -725,7 +730,9 @@ def _render_audience_tab():
     spam_abuse = _cached_spam_abuse()
 
     # 1. Confidence banner
-    if ov.get("confidence_tier") == "not enough data":
+    if ov.get("unreadable_comments"):
+        st.warning("⚠️ **Comments exist but aren't readable yet (Meta app not Live)**")
+    elif ov.get("confidence_tier") == "not enough data":
         st.warning(
             f"⚠️ **Not enough data** ({ov.get('total_comments', 0)}/20 audience comments). "
             "Metrics and classifications shown below are preliminary signals."
@@ -736,7 +743,10 @@ def _render_audience_tab():
     # 2. Overview metrics
     mcol1, mcol2, mcol3, mcol4 = st.columns(4)
     with mcol1:
-        st.metric("Audience Comments", ov.get("total_comments", 0))
+        if ov.get("unreadable_comments"):
+            st.metric("Audience Comments", "Unreadable (app not Live)")
+        else:
+            st.metric("Audience Comments", ov.get("total_comments", 0))
     with mcol2:
         st.metric("AI-Classified", ov.get("total_labelled", 0))
     with mcol3:
@@ -751,7 +761,10 @@ def _render_audience_tab():
     st.caption("Action items for community engagement. Humans reply in the Instagram app; this agent never posts or replies.")
 
     if not needs_reply:
-        st.info("No comments currently waiting for a reply. All caught up!")
+        if ov.get("unreadable_comments"):
+            st.info("Comments exist but aren't readable yet (Meta app not Live). Needs-reply queue is pending.")
+        else:
+            st.info("No comments currently waiting for a reply. All caught up!")
     else:
         rows = []
         for c in needs_reply:
@@ -776,7 +789,10 @@ def _render_audience_tab():
     st.caption("Themes repeated by 2 or more distinct viewers qualify as actionable content ideas, ranked by demand.")
 
     if not ideas:
-        st.info("No repeating content ideas yet (requires questions/requests from >=2 distinct viewers).")
+        if ov.get("unreadable_comments"):
+            st.info("Comments exist but aren't readable yet (Meta app not Live). Content ideas will appear once comments are readable.")
+        else:
+            st.info("No repeating content ideas yet (requires questions/requests from >=2 distinct viewers).")
     else:
         for idx, idea in enumerate(ideas, 1):
             st.markdown(f"#### #{idx} {idea['theme']}")
@@ -973,6 +989,266 @@ def _render_recommendations_tab():
             st.table(hist_rows)
 
 
+# ── Alerts Bar (Rendered Above Tabs) ──────────────────────────────────
+
+def _render_alerts_bar():
+    engine = _get_engine()
+    if engine is None:
+        return
+
+    view_state = load_view_state()
+    dismissed_keys = set(view_state.get("dismissed_dedupe_keys", []))
+    last_seen_str = view_state.get("last_seen_at")
+
+    # Fetch DB alerts
+    db_alerts = get_db_alerts(engine)
+
+    # Compute view-time system alerts
+    log_entries = _cached_log()
+    last_ok = last_successful_run(log_entries) if log_entries else None
+    system_alerts = evaluate_view_time_system_alerts(last_ok)
+
+    all_alerts = system_alerts + db_alerts
+
+    # Active alerts = not resolved in DB and not dismissed in view_state
+    active_alerts = [
+        a for a in all_alerts
+        if not a.get("is_resolved", False) and a["dedupe_key"] not in dismissed_keys
+    ]
+
+    # Calculate unread count (alerts created after last_seen_at)
+    unread_count = 0
+    if last_seen_str:
+        try:
+            last_seen_dt = datetime.fromisoformat(last_seen_str)
+            for a in active_alerts:
+                c_at = a.get("created_at")
+                if c_at:
+                    if c_at.tzinfo is None:
+                        c_at = c_at.replace(tzinfo=UTC)
+                    if last_seen_dt.tzinfo is None:
+                        last_seen_dt = last_seen_dt.replace(tzinfo=UTC)
+                    if c_at > last_seen_dt:
+                        unread_count += 1
+        except Exception:
+            unread_count = len(active_alerts)
+    else:
+        unread_count = len(active_alerts)
+
+    if active_alerts:
+        st.markdown(f"### 🔔 Alerts ({len(active_alerts)} active · {unread_count} unread)")
+        for a in active_alerts:
+            sev = a.get("severity", "info").lower()
+            key = a["dedupe_key"]
+            title = a["title"]
+            body = a["body"]
+
+            col_alert, col_btn = st.columns([5, 1])
+            with col_alert:
+                if sev == "critical":
+                    st.error(f"🚨 **[{sev.upper()}] {title}**\n\n{body}")
+                elif sev == "warning":
+                    st.warning(f"⚠️ **[{sev.upper()}] {title}**\n\n{body}")
+                else:
+                    st.info(f"ℹ️ **[{sev.upper()}] {title}**\n\n{body}")
+
+            with col_btn:
+                if st.button("✖ Dismiss", key=f"dismiss_btn_{key}"):
+                    dismiss_alert(key)
+                    st.rerun()
+    else:
+        st.caption("🔔 **Alerts**: All clear — no active alerts.")
+
+    # History Expander
+    dismissed_or_resolved = [
+        a for a in all_alerts
+        if a.get("is_resolved", False) or a["dedupe_key"] in dismissed_keys
+    ]
+    if dismissed_or_resolved:
+        with st.expander(f"📜 Alert History ({len(dismissed_or_resolved)} dismissed / resolved)"):
+            hist_rows = []
+            for h in dismissed_or_resolved:
+                status = "✅ Resolved" if h.get("is_resolved") else "👁️ Dismissed"
+                time_val = h.get("created_at_ist") or _format_time_12h(h.get("created_at"))
+                hist_rows.append({
+                    "Time (IST)": time_val,
+                    "Severity": h.get("severity", "").upper(),
+                    "Title": h.get("title", ""),
+                    "Status": status,
+                    "Details": h.get("body", "")[:80] + ("…" if len(h.get("body", "")) > 80 else ""),
+                })
+            st.table(hist_rows)
+
+    mark_alerts_seen()
+    st.divider()
+
+
+# ── Tab: Reports ───────────────────────────────────────────────────────
+
+def _render_reports_tab():
+    st.subheader("📑 Weekly Executive Reports")
+    engine = _get_engine()
+    if engine is None:
+        st.info("No database available.")
+        return
+
+    weeks = get_available_report_weeks_query(engine)
+    if not weeks:
+        st.info("No weekly report data found.")
+        return
+
+    selected_week = st.selectbox("📅 Select Week (IST Monday–Sunday)", weeks, index=0)
+
+    report = get_weekly_report_query(engine, selected_week)
+    data = report["data"]
+    summary = report["summary_text"]
+    is_ai = report["is_ai_summary"]
+
+    # Download buttons
+    dcol1, dcol2 = st.columns(2)
+    with dcol1:
+        st.download_button(
+            label="📥 Download Report (.md)",
+            data=report["markdown"],
+            file_name=f"weekly_report_{selected_week}.md",
+            mime="text/markdown",
+            key=f"dl_md_{selected_week}",
+        )
+    with dcol2:
+        st.download_button(
+            label="🌐 Download Standalone Report (.html)",
+            data=report["html"],
+            file_name=f"weekly_report_{selected_week}.html",
+            mime="text/html",
+            key=f"dl_html_{selected_week}",
+        )
+
+    st.markdown("---")
+
+    # Header and Status
+    is_current = data.get("is_current_week", False)
+    status_label = "🟡 In Progress (week ends Sunday 11:59 PM IST)" if is_current else "🟢 Closed Week"
+    st.markdown(f"### Report for Week **{selected_week}** · `{status_label}`")
+    st.caption(f"**Period (IST)**: {data['week_start_ist']} to {data['week_end_ist']}")
+
+    # Executive Summary Card
+    badge = "🤖 AI-Generated" if is_ai else "📝 Deterministic Template"
+    st.info(f"**Executive Summary** ({badge}):\n\n{summary}")
+
+    st.markdown("---")
+
+    # Section 1: Publishing Activity
+    st.markdown("### 🎬 1. Publishing Activity")
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Reels Published", data["published_count"])
+    col2.metric("Total Views", f"{data['total_views']:,}")
+    col3.metric("Baseline Median Views", f"{data['baseline_views']:,}")
+
+    if data["publications"]:
+        p_rows = []
+        for p in data["publications"]:
+            p_rows.append({
+                "ID": p["id"],
+                "Published (IST)": p["published_at_ist"],
+                "Topic": p["topic"],
+                "Format": p["format"],
+                "Hook": p["hook"],
+                "Views": f"{p['views']:,}",
+            })
+        st.table(p_rows)
+    else:
+        st.info("No posts were published during this week.")
+
+    st.markdown("---")
+
+    # Section 2: Results vs Normal
+    st.markdown("### 📊 2. Results vs Normal")
+    tier = data.get("confidence_tier", "not enough data")
+    if tier == "not enough data":
+        st.warning(
+            f"⚠️ **Baseline Confidence: Not Enough Data** ({data['usable_7d_posts']}/5 posts with 7d views). "
+            "Comparisons against baseline are preliminary."
+        )
+    else:
+        st.success(f"✅ **Baseline Confidence: {tier.title()}** ({data['usable_7d_posts']} posts with 7d views).")
+
+    st.markdown("---")
+
+    # Section 3: Follower Growth
+    st.markdown("### 📈 3. Follower Growth")
+    st.caption("Readings are **approximate (readings taken at irregular times)**.")
+    s = data.get("follower_start")
+    e = data.get("follower_end")
+    if s and e:
+        fg1, fg2, fg3 = st.columns(3)
+        fg1.metric(f"Start: {s['time_ist']}", f"{s['count']:,} followers")
+        fg2.metric(f"End: {e['time_ist']}", f"{e['count']:,} followers")
+        delta = data.get("follower_delta", 0)
+        fg3.metric("Net Change", f"{delta:+d}")
+    else:
+        st.info("No follower snapshots recorded for this period.")
+
+    st.markdown("---")
+
+    # Section 4: Recommendations Followed & Outcomes
+    st.markdown("### 🎯 4. Recommendations Followed + Outcomes")
+    followed = data.get("followed_recommendations", [])
+    if followed:
+        f_rows = []
+        for f in followed:
+            ratio = f.get("outcome_ratio")
+            r_str = f"{ratio:.1f}x baseline" if ratio is not None else "⏳ 7d checkpoint pending"
+            f_rows.append({
+                "Rank": f"#{f['rank']}",
+                "Topic": f["topic"],
+                "Format": f["format"],
+                "Followed by Reel": f"#{f['matched_pub_id']}",
+                "7d Result": r_str,
+            })
+        st.table(f_rows)
+    else:
+        st.info("No recommendations were followed by publications during this week.")
+
+    st.markdown("---")
+
+    # Section 5: Audience Highlights
+    st.markdown("### 👥 5. Audience Highlights")
+    if data.get("unreadable_comments_flag"):
+        st.warning("⚠️ **Comments exist but aren't readable yet (Meta app not Live)**")
+    elif data.get("collected_comments_count", 0) == 0:
+        st.info("No comments were collected during this week.")
+    else:
+        st.success(f"💬 {data['collected_comments_count']} comments received and analyzed this week.")
+
+    st.markdown("---")
+
+    # Section 6: Data Health & Next Week's Plan
+    st.markdown("### 🏥 6. Data Health & Next Week's Plan")
+    dh = data.get("data_health", {})
+    dh1, dh2, dh3, dh4 = st.columns(4)
+    dh1.metric("Total Snapshots", dh.get("total_snapshots", 0))
+    dh2.metric("Complete", dh.get("complete", 0))
+    dh3.metric("Delayed", dh.get("delayed", 0))
+    dh4.metric("Unavailable", dh.get("unavailable", 0))
+
+    st.markdown(f"#### 🧭 Next Week's Plan ({data.get('next_week_key')})")
+    next_plan = data.get("next_plan", [])
+    if next_plan:
+        np_rows = []
+        for np in next_plan:
+            np_rows.append({
+                "Rank": f"#{np['rank']}",
+                "Topic": np["topic"],
+                "Format": np["format"],
+                "Hook": np["hook"],
+                "Schedule": f"{np['weekday']} · {np['posting_block']}",
+                "Action": np["action"],
+            })
+        st.table(np_rows)
+    else:
+        st.info(f"No recommendation set generated yet for {data.get('next_week_key')}.")
+
+
 # ── Main ───────────────────────────────────────────────────────────────
 
 def main():
@@ -988,8 +1264,11 @@ def main():
     if not _preflight():
         return
 
-    tab_posts, tab_account, tab_perf, tab_aud, tab_recs, tab_health = st.tabs([
-        "📋 Posts", "📈 Account", "🎯 Performance", "👥 Audience", "💡 Recommendations", "🏥 Data Health"
+    # Render alerts bar at top of all tabs
+    _render_alerts_bar()
+
+    tab_posts, tab_account, tab_perf, tab_aud, tab_recs, tab_reports, tab_health = st.tabs([
+        "📋 Posts", "📈 Account", "🎯 Performance", "👥 Audience", "💡 Recommendations", "📑 Reports", "🏥 Data Health"
     ])
 
     with tab_posts:
@@ -1007,6 +1286,9 @@ def main():
     with tab_recs:
         _render_recommendations_tab()
 
+    with tab_reports:
+        _render_reports_tab()
+
     with tab_health:
         _render_health_tab()
 
@@ -1015,4 +1297,5 @@ if __name__ == "__page__":
     main()
 else:
     main()
+
 

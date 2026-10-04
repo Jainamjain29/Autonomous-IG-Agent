@@ -33,8 +33,8 @@ it can later move into a separate SaaS repo unchanged.
 | 3 | Basic metrics view | **done** |
 | 4 | Performance analysis | **done** |
 | 5 | Comments collector + audience intelligence | next |
-| 6 | Recommendations | |
-| 7 | Full reports + alerts | |
+| 6 | Recommendations | **done** |
+| 7 | Full reports + alerts | **done** |
 | 8 | YouTube adapter | |
 | 9 | Hand-offs to other agents | |
 
@@ -420,3 +420,36 @@ The full suite (108 existing + 49 new) passes.
 **Tests**
 - 14 new tests in `tests/test_insight_recommend.py` covering exploration generation, distinct topics, symmetric evidence thresholds, audience idea ranking, hard number guard & multiplier rejection, template fallback on guard failure, no-Gemini rule when <5 posts, 14-day matching window, one-to-one post matching, CLI runner, and end-to-end integration.
 - Full suite: **270 tests passing cleanly** in 27.02s.
+
+### Step 7: Full Reports + Alerts (2026-10-04)
+
+**Built**
+- **Alembic Migration 0005** (`0005_reports_and_alerts.py`):
+  - Created `alerts` table: `id`, `kind`, `severity` (info/warning/critical), `dedupe_key` (unique), `title`, `body`, `facts_json`, `created_at`, `resolved_at`.
+  - Created `weekly_reports` table: `id`, `week_key` (unique), `prompt_version`, `model`, `generated_at`, `facts_json`, `summary_text`, `is_ai_summary`.
+- **Alerts Engine** (`insight/alerts.py`):
+  - Token expiry tracking with stages: missing (warning), <14d (warning), <3d (critical), expired (critical). Auto-resolves when `META_TOKEN_EXPIRES_AT` moves beyond 14 days. Dedupe key includes stage to prevent repeat alerts per day.
+  - Collector event alerts: Reel pace taking off / slow start (requires >=5 posts), 7-day checkpoint result recorded, new weekly recommendations ready, recommendation outcome recorded, needs reply (dormant until comments exist).
+  - Offline / view-time system alerts computed at dashboard load time without writing to database: `collector_not_running` (no OK run in 24h) and `collector_failing` (3 consecutive non-OK runs in collect.log).
+  - Deduplication and auto-resolution: active alerts resolved with timestamp when condition clears.
+- **Weekly Report Engine** (`insight/report.py`):
+  - Pure deterministic calculation for IST weeks (Monday 00:00:00 to Sunday 23:59:59 IST).
+  - 6 report sections: Publishing activity, Results vs normal (with confidence tiers), Follower growth (with two readings and 12-hour IST timestamps, labelled "approximate (readings taken at irregular times)"), Recommendations followed & outcomes, Audience highlights (with unreadable comments detection), Data health & next week's plan (reusing Step 6 recommendation set).
+  - AI executive summary (3–4 sentences) with Step 6 Number Guard and Quality Guard. In low-data tier (<5 posts with 7d views), strictly uses code template facts only with zero judgements and never calls Gemini.
+  - Exporters: GitHub-flavored Markdown (`generate_report_markdown`) and self-contained HTML (`generate_report_html`).
+- **Dashboard View State Manager** (`insight/view_state.py`):
+  - Atomic file storage (`data/view_state.json`) keeping user alert dismissals and `last_seen_at` timestamps strictly separated from the read-only SQLite database.
+- **Streamlit View Integration** (`insight/view.py`):
+  - Top Alerts Bar rendered above all tabs: displays active alerts with severity styling, unread counter, per-alert dismiss button, and an alert history expander.
+  - Added "📑 Reports" tab: week selectbox (newest first), Markdown and HTML download buttons, executive summary card, and all 6 structured report sections.
+  - Audience tab update: when post comments count > 0 but API returns none (Meta app in development mode), displays `"Comments exist but aren't readable yet (Meta app not Live)"` — never `"0 comments"`.
+  - Strictly read-only guarantee: view operations never execute write statements against `data/insight.db`.
+- **Collector Integration** (`insight/collect.py`):
+  - Section 9: evaluates all collector event alerts, auto-resolves cleared alerts, and logs active alerts in run summary.
+
+**Tests**
+- 8 tests in `tests/test_insight_alerts.py` covering token expiry stages, auto-resolve, pace flags (5-post requirement), checkpoint 7d result alert, recommendation alerts, needs reply alerts, collector failing (3 runs), and collector not running (24h).
+- 5 tests in `tests/test_insight_report.py` covering week boundaries, deterministic calculation, low-data facts-only template, dual guards, markdown/html exports, and unreadable comments flag.
+- Updated `tests/test_insight_view.py` with 7-tab check, download button validation, atomic view state tests, and SHA-256 database immutability verification.
+- Full suite: **293 tests passing cleanly** in 31.91s.
+

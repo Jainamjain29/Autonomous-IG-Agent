@@ -16,7 +16,7 @@ from typing import Any
 from sqlalchemy import distinct, func, select
 
 import database as db
-from .models import Comment, CommentLabel, Publication
+from .models import Comment, CommentLabel, MetricSnapshot, MetricValue, Publication
 from .timeutil import UTC
 
 logger = logging.getLogger("insight.audience")
@@ -459,10 +459,22 @@ def get_audience_overview(session) -> dict[str, Any]:
         .filter(Comment.is_own_account == False)
     ) or 0
 
+    posts_comments_metric_sum = session.scalar(
+        select(func.sum(MetricValue.value))
+        .join(MetricSnapshot, MetricSnapshot.id == MetricValue.snapshot_id)
+        .filter(
+            MetricSnapshot.subject_type == "publication",
+            MetricValue.canonical_metric == "comments",
+            MetricValue.value > 0,
+        )
+    ) or 0
+
+    unreadable_comments = bool(posts_comments_metric_sum > 0 and total_comments == 0)
     confidence_tier = "full" if total_comments >= 20 else "not enough data"
 
     return {
         "total_comments": total_comments,
         "total_labelled": total_labelled,
         "confidence_tier": confidence_tier,
+        "unreadable_comments": unreadable_comments,
     }

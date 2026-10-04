@@ -61,6 +61,8 @@ class AlembicTests(unittest.TestCase):
                     "recommendation_sets",
                     "recommendations",
                     "post_feedback",
+                    "alerts",
+                    "weekly_reports",
                 }
                 self.assertEqual(tables, expected)
             finally:

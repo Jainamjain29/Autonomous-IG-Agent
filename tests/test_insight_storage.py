@@ -43,7 +43,8 @@ class SchemaTests(InsightDBTestCase):
         tables = set(inspect(self.engine).get_table_names())
         self.assertEqual(tables, {"accounts", "publications", "metric_definitions", "metric_snapshots",
                                   "metric_values", "raw_responses", "comments", "post_tags", "comment_labels",
-                                  "recommendation_sets", "recommendations", "post_feedback"})
+                                  "recommendation_sets", "recommendations", "post_feedback",
+                                  "alerts", "weekly_reports"})
 
     def test_seed_loaded_and_idempotent(self):
         count = self.session.query(MetricDefinition).count()

@@ -405,6 +405,19 @@ class Collector:
                 except Exception as rec_err:
                     self.logger.warning(f"[collect] Recommendation generation error (non-fatal): {rec_err}")
 
+            # 9. Alerts evaluation and auto-resolution
+            if not self.dry_run:
+                try:
+                    from .alerts import evaluate_all_collector_alerts
+                    raised = evaluate_all_collector_alerts(session, now=now)
+                    if raised:
+                        self.logger.info(f"[collect] Alerts active ({len(raised)}):")
+                        for a in raised:
+                            self.logger.info(f"[collect]   - [{a.severity.upper()}] {a.title}: {a.body}")
+                    session.flush()
+                except Exception as alert_err:
+                    self.logger.warning(f"[collect] Alerts evaluation error (non-fatal): {alert_err}")
+
             if self.dry_run:
                 session.rollback()
                 self.logger.info("[collect] DRY-RUN mode: rolled back all changes.")

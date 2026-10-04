@@ -644,7 +644,19 @@ class StreamlitRenderTests(unittest.TestCase):
                 self.assertIn("🎯 Performance", tab_labels)
                 self.assertIn("👥 Audience", tab_labels)
                 self.assertIn("💡 Recommendations", tab_labels)
+                self.assertIn("📑 Reports", tab_labels)
                 self.assertIn("🏥 Data Health", tab_labels)
+
+                # Check download buttons in Reports tab
+                reports_tab = next(t for t in at.tabs if t.label == "📑 Reports")
+                dl_labels = [
+                    getattr(c.proto, "label", "")
+                    for col in reports_tab.columns
+                    for c in col.children.values()
+                    if hasattr(c, "proto")
+                ]
+                self.assertTrue(any("Download Report (.md)" in l for l in dl_labels))
+                self.assertTrue(any("Download Standalone Report (.html)" in l for l in dl_labels))
             finally:
                 if at is not None:
                     try:
@@ -679,6 +691,75 @@ class StreamlitRenderTests(unittest.TestCase):
             else:
                 os.environ.pop("INSIGHT_VIEW_DB_PATH", None)
 
+    def test_view_state_atomic_and_dismissal(self):
+        """Test view_state.json atomic operations and alert dismissals."""
+        from insight.view_state import dismiss_alert, is_alert_dismissed, load_view_state, mark_alerts_seen
+
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+            state_path = os.path.join(tmp, "view_state.json")
+
+            # Initially empty
+            st0 = load_view_state(state_path)
+            self.assertEqual(st0["dismissed_dedupe_keys"], [])
+            self.assertIsNone(st0["last_seen_at"])
+
+            # Dismiss an alert
+            dismiss_alert("test_key_1", path=state_path)
+            self.assertTrue(is_alert_dismissed("test_key_1", path=state_path))
+            self.assertFalse(is_alert_dismissed("test_key_2", path=state_path))
+
+            # Mark alerts seen
+            mark_alerts_seen(now=datetime(2026, 10, 4, 12, 0, tzinfo=timezone.utc), path=state_path)
+            st1 = load_view_state(state_path)
+            self.assertEqual(st1["dismissed_dedupe_keys"], ["test_key_1"])
+            self.assertEqual(st1["last_seen_at"], "2026-10-04T12:00:00+00:00")
+
+    def test_view_operations_strictly_readonly_on_database(self):
+        """Verify that view query operations NEVER write to the SQLite database file."""
+        import hashlib
+        from insight.queries import (
+            get_available_report_weeks_query,
+            get_daily_account_metrics,
+            get_db_alerts,
+            get_performance_overview,
+            get_posts_with_snapshots,
+            get_weekly_report_query,
+        )
+
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+            db_path = os.path.join(tmp, "readonly_test.db")
+            engine = make_engine(sqlite_url(db_path))
+            from insight.db import upgrade_db
+            upgrade_db(engine)
+            _seed_db(engine)
+            engine.dispose()
+
+            # Compute sha256 before running any view queries
+            with open(db_path, "rb") as f:
+                sha_before = hashlib.sha256(f.read()).hexdigest()
+
+            # Open readonly engine and execute all view query paths
+            ro_engine = make_readonly_engine(db_path=db_path)
+            get_posts_with_snapshots(ro_engine)
+            get_daily_account_metrics(ro_engine)
+            get_performance_overview(ro_engine)
+            weeks = get_available_report_weeks_query(ro_engine)
+            for w in weeks:
+                get_weekly_report_query(ro_engine, w)
+            get_db_alerts(ro_engine)
+            ro_engine.dispose()
+
+            # Compute sha256 after running view queries
+            with open(db_path, "rb") as f:
+                sha_after = hashlib.sha256(f.read()).hexdigest()
+
+            self.assertEqual(
+                sha_before,
+                sha_after,
+                "Database file was modified by view query operations! View must remain strictly read-only.",
+            )
+
 
 if __name__ == "__main__":
     unittest.main()
+
