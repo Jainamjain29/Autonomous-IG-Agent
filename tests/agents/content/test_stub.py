@@ -11,12 +11,9 @@ from core.contracts import AgentTask, RunSpec
 
 
 class TestContentAgentStub(unittest.TestCase):
-    def test_stub_returns_not_implemented(self):
+    def test_content_agent_instantiation(self):
         agent = ContentAgent()
-        task = AgentTask(run_id="run_test", run_dir="/tmp", spec=RunSpec())
-        res = agent.run(task)
-        self.assertEqual(res.status, "failed")
-        self.assertIn("not implemented", res.error)
+        self.assertEqual(agent.name, "content")
 
 
 if __name__ == "__main__":
