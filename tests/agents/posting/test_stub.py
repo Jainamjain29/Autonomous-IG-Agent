@@ -7,16 +7,15 @@ if repo_root not in sys.path:
     sys.path.insert(0, repo_root)
 
 from agents.posting.agent import PostingAgent
-from core.contracts import AgentTask, RunSpec
+from tests.agents.posting.test_posting import TestPostingAgentSuite
 
 
-class TestPostingAgentStub(unittest.TestCase):
-    def test_stub_returns_not_implemented(self):
+class TestPostingAgentStub(TestPostingAgentSuite):
+    def test_agent_initialization(self):
         agent = PostingAgent()
-        task = AgentTask(run_id="run_test", run_dir="/tmp", spec=RunSpec())
-        res = agent.run(task)
-        self.assertEqual(res.status, "failed")
-        self.assertIn("not implemented", res.error)
+        self.assertEqual(agent.name, "posting")
+
+
 
 
 if __name__ == "__main__":
