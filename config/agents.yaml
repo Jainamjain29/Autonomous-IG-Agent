@@ -1,0 +1,69 @@
+# Agent configuration: default settings and agent-specific configurations
+# Note: API keys are NEVER stored here; they are loaded from .env only.
+
+defaults:
+  provider: gemini
+  model: gemini-2.5-flash
+  temperature: 0.7
+  timeout_s: 30
+  backup:
+    provider: gemini
+    model: gemini-2.5-flash-lite
+    temperature: 0.7
+    timeout_s: 30
+
+agents:
+  content:
+    provider: gemini
+    model: gemini-2.5-flash
+    temperature: 0.8
+    timeout_s: 45
+    backup:
+      provider: gemini
+      model: gemini-2.5-flash-lite
+      temperature: 0.8
+      timeout_s: 45
+
+  video_gen:
+    provider: gemini
+    model: gemini-2.5-flash
+    temperature: 0.4
+    timeout_s: 30
+    backup:
+      provider: gemini
+      model: gemini-2.5-flash-lite
+      temperature: 0.4
+      timeout_s: 30
+
+  sync_merge:
+    provider: gemini
+    model: gemini-2.5-flash
+    temperature: 0.2
+    timeout_s: 30
+    backup:
+      provider: gemini
+      model: gemini-2.5-flash-lite
+      temperature: 0.2
+      timeout_s: 30
+
+  qc:
+    provider: gemini
+    model: gemini-2.5-flash
+    temperature: 0.2
+    timeout_s: 30
+    backup:
+      provider: gemini
+      model: gemini-2.5-flash-lite
+      temperature: 0.2
+      timeout_s: 30
+
+  posting:
+    provider: gemini
+    model: gemini-2.5-flash
+    temperature: 0.2
+    timeout_s: 30
+    backup:
+      provider: gemini
+      model: gemini-2.5-flash-lite
+      temperature: 0.2
+      timeout_s: 30

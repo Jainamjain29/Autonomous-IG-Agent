@@ -1,0 +1,49 @@
+# Model pricing per 1,000,000 tokens (USD)
+default:
+  input_per_m: 0.15
+  output_per_m: 0.60
+
+# Google Gemini
+gemini-2.5-flash:
+  input_per_m: 0.15
+  output_per_m: 0.60
+
+gemini-2.5-flash-lite:
+  input_per_m: 0.075
+  output_per_m: 0.30
+
+gemini-1.5-flash:
+  input_per_m: 0.075
+  output_per_m: 0.30
+
+gemini-3.5-flash:
+  input_per_m: 0.15
+  output_per_m: 0.60
+
+# OpenAI
+gpt-4o:
+  input_per_m: 2.50
+  output_per_m: 10.00
+
+gpt-4o-mini:
+  input_per_m: 0.15
+  output_per_m: 0.60
+
+# Anthropic
+claude-3-5-sonnet-20241022:
+  input_per_m: 3.00
+  output_per_m: 15.00
+
+claude-3-5-haiku-20241022:
+  input_per_m: 0.80
+  output_per_m: 4.00
+
+# DeepSeek
+deepseek-chat:
+  input_per_m: 0.14
+  output_per_m: 0.28
+
+# Testing
+fake-model:
+  input_per_m: 0.0
+  output_per_m: 0.0

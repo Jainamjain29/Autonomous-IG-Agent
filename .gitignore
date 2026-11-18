@@ -2,6 +2,7 @@
 __pycache__/
 data/
 workspace/
+runs/
 *.db
 *.json
 *.mp4

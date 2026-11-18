@@ -25,3 +25,12 @@ playwright
 # Insight Agent storage (insight/). 2.0.31+ is the first release supporting Python 3.13.
 SQLAlchemy>=2.0.31
 alembic>=1.13
+
+# Core and agent requirements
+pyyaml
+-r agents/content/requirements.txt
+-r agents/video_gen/requirements.txt
+-r agents/sync_merge/requirements.txt
+-r agents/qc/requirements.txt
+-r agents/posting/requirements.txt
+
