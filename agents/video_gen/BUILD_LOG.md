@@ -4,3 +4,121 @@
 - Created package structure, contract documentation, and stub agent.
 - Output specification defined for `video_gen/clips.json`.
 - Stub returns `status="failed"`, `error="not implemented"`.
+
+## Build 1/5: Engine Layer, Claude Code (Default), Flow, Placeholder, Tests
+
+### Plan Mapped to Real File Names
+1. `agents/video_gen/defaults.py`
+   - Default provider: `"claude_code"`
+   - Default resolution: 1080x1920 (9:16)
+   - Default FPS: 30
+   - Clamped duration bounds: min 2.0s, max 15.0s
+   - Retry limits: 2 retries (3 attempts total) per scene
+
+2. `agents/video_gen/probe.py`
+   - Real media probing via `ffprobe` subprocess with JSON output
+   - Robust fallback to `ffmpeg -i` (using `imageio_ffmpeg`) when `ffprobe` is not in PATH
+   - Returns exact probed `(duration_s, width, height)`; never trusts engine claims
+
+3. `agents/video_gen/providers/base.py`
+   - Data models: `Capabilities`, `ClipInfo`, `CharacterModel`
+   - Abstract base class: `VideoProvider` with `prepare()` and `generate()`
+   - Engine registry with `register_provider`, `get_provider`, `list_providers`
+   - Clear error when an unknown engine name is requested
+
+4. `agents/video_gen/providers/api_template.py`
+   - Documented skeleton for external video generation APIs (e.g. Luma Dream Machine, Runway Gen-3, Google Veo)
+   - Job submission, polling with exponential backoff and timeout, download, probe
+   - NOT registered in registry; no runnable network calls
+
+5. `agents/video_gen/providers/claude_code.py`
+   - Engine 1 (DEFAULT): `"claude_code"` AI-coded animation, rendered locally
+   - `prepare()`: Single call to `core.llm.complete(agent="video_gen", ...)` producing a design kit (`palette`, `fonts`, `character_svg`), saved to `video_gen/design_kit.json` and `video_gen/character.svg`. Reused across all scenes.
+   - `generate()`: Single call to `core.llm.complete` producing self-contained HTML (1080x1920) implementing `window.renderFrame(t_seconds)` and Web Animations API.
+   - Render contract: Playwright Chromium headless, frame-by-frame rendering at requested FPS (screenshots piped to FFmpeg stdin via `image2pipe`), network sandbox (`route.abort` anything not `file:` / `data:`).
+   - Retry on missing `renderFrame` or page error: fed back once to LLM, then fails if unresolved.
+   - Scene HTML archived at `video_gen/scenes/{scene_id}.html` for audit/debugging.
+
+6. `agents/video_gen/providers/flow.py` & `agents/video_gen/providers/flow_selectors.py`
+   - Engine 2: `"flow"` Google Flow via Playwright
+   - Persistent profile outside repo (`FLOW_PROFILE_DIR`, default `%LOCALAPPDATA%\ig_agent\flow_profile`)
+   - CLI login helper: `python -m agents.video_gen.providers.flow --login`
+   - Locked character block + scene visual prompt, 9:16 aspect ratio request, file upload for reference image
+   - Centralized DOM selectors in `flow_selectors.py`
+
+7. `agents/video_gen/providers/placeholder.py`
+   - Engine 3: `"placeholder"` for tests and dry runs
+   - Generates valid MP4 via `core.testing.make_tiny_mp4` / FFmpeg testsrc at target size/length
+   - No network, no LLM
+
+8. `agents/video_gen/agent.py`
+   - Subclass `core.agent.BaseAgent`, `name="video_gen"`
+   - Orchestrates loading `content/plan.json` and `spec.yaml`
+   - Resolves provider, character model, prepares engine
+   - Resumable: checks if `video_gen/clips/scene_{id}.mp4` exists and probes validly; skips generation if present
+   - Generates missing scenes with up to 2 retries; raises clear error naming failed scene on failure
+   - Writes `video_gen/clips.json` strictly adhering to contract
+   - Records lifecycle events via `core.runfolder.append_event`
+
+9. `tests/agents/video_gen/`
+   - `test_agent.py`: Full run with placeholder engine, clips.json validation, resume skip, retry/failure naming scene, unknown engine handling, real probe values used.
+   - `test_claude_code.py`: FakeLLM returns HTML with renderFrame, real render to MP4 (1080x1920, low FPS/duration for fast test), network requests blocked, missing renderFrame retry feedback, design kit reuse.
+   - `test_flow.py`: Mocked browser tests for Google Flow prompt construction, selector mapping, download handling, login check.
+   - `test_probe.py`: Probe tests for valid and corrupt videos.
+
+### Exact spec.yaml Fields Read
+- Provider:
+  1. `task.spec.extra.get("video", {}).get("provider")`
+  2. `spec.yaml` on disk under `video.provider`
+  3. Default fallback: `"claude_code"`
+- Character Description:
+  1. `task.spec.character_text`
+  2. `spec.yaml` under `character.description` or `character_text`
+  3. Default: empty string
+- Character Reference Image:
+  1. `task.spec.character_image`
+  2. `spec.yaml` under `character.image` or `character_image`
+  3. Default: None
+
+### Conflicts Found with README.md
+1. **Clip Output Paths**:
+   - `README.md` shows snippet `"path": "video_gen/scene_1.mp4"`.
+   - Build specification requires resumable clip checks in `video_gen/clips/` (`"video_gen/clips/scene_1.mp4"`).
+   - **Resolution**: Clips are written to `video_gen/clips/scene_{id}.mp4` and recorded in `clips.json` with relative path `video_gen/clips/scene_{id}.mp4`. For backward compatibility with any consumer expecting `video_gen/scene_{id}.mp4`, the resumable checker inspects both `video_gen/clips/scene_{id}.mp4` and `video_gen/scene_{id}.mp4`.
+
+### Test Results
+- Full repository test suite (`python -m unittest discover -s tests -v`):
+  - **312 tests passed in 24.7s** (0 failures, 0 errors).
+- Video Gen dedicated test suite (`python -m unittest discover -s tests/agents/video_gen -v`):
+  - **19 tests passed in 7.7s** (0 failures, 0 errors).
+  - Tests verify:
+    - Agent full workflow with `placeholder` engine matching `clips.json` schema exactly
+    - Real ffprobe/ffmpeg probing verification vs engine claimed metadata
+    - Resume mechanism skipping valid existing clips
+    - Retry logic and clear stage failure naming the scene
+    - Unknown engine registry errors listing available engines
+    - `claude_code` engine: design kit + character SVG generation & reuse, HTML renderFrame execution, headless Playwright frame-by-frame rendering to 1080x1920 MP4, network isolation sandbox aborting external fetches, missing renderFrame retry feedback loop
+    - `flow` engine: locked character block + visual prompt assembly, 9:16 aspect ratio, selector configuration, mock Playwright workflow, login guidance when profile is missing
+    - `probe` utility: corrupt, missing, and valid MP4 files
+    - Stub contract test: failure on nonexistent run directories
+- Playwright Chromium installed in shared virtual environment (`D:\Insta - AI Agent\IG_Agent\.venv`).
+
+### Needs Coordination
+1. **RunSpec Contract Fields for Video & Character**:
+   - In `core/contracts.py`, `RunSpec` currently defines:
+     `mode`, `topic`, `script`, `character_text`, `character_image`, `video_path`, `platforms`, `extra`.
+   - There is no first-class `video` dataclass field (e.g. `video: Optional[VideoSpec]`).
+   - We read `spec.extra.get("video", {})` and `spec.yaml`'s `video:` block without modifying `core/contracts.py`. Coordinating a typed `VideoSpec` in `RunSpec` in a future core update would improve type safety.
+2. **LLM Gateway Support for Claude / Anthropic Models**:
+   - `core/llm/providers.py` currently implements `gemini`, `openai_compat`, `fake`, and optional `litellm`. There is no dedicated native `anthropic` provider in `core/llm/providers.py`.
+   - In `config/agents.yaml`, `video_gen` is currently mapped to `provider: gemini`, `model: gemini-2.5-flash`.
+   - To point `video_gen` at Claude today without code changes to core, one must either:
+     a) Use `litellm` (if installed) with `ANTHROPIC_API_KEY`, OR
+     b) Use `openai_compat` pointing to an OpenAI-compatible proxy (e.g. LiteLLM proxy, Cloudflare AI Gateway, or OpenRouter with `OPENAI_BASE_URL=https://openrouter.ai/api/v1` and `OPENAI_API_KEY=...`), OR
+     c) Add an `anthropic` provider to `core/llm/providers.py` reading `ANTHROPIC_API_KEY` from `.env` and calling `https://api.anthropic.com/v1/messages`.
+     In `config/agents.yaml`:
+     ```yaml
+     video_gen:
+       provider: anthropic  # or openai_compat
+       model: claude-3-5-sonnet-20241022
+     ```
