@@ -163,3 +163,88 @@
 - **`tests/agents/__init__.py` discovery gap**:
   - `tests/agents/` previously lacked `__init__.py` on `main`, causing standard test discovery (`python -m unittest discover -s tests -v`) to skip subagent test directories.
   - Per instructions, this is a core repository item handled by the coordination chat on `main` and was not modified in this branch.
+
+## Prompt 3 — real run
+
+### 1. Sample Used
+- Source: `workspace/final_reel.mp4`, `workspace/subs.srt`, and `workspace/current_video_plan.json` under `D:\Insta - AI Agent\IG_Agent`.
+- Target copy: `runs/qc-real-20261120-2336/` (isolated, original untouched).
+- Video metrics:
+  - File name: `final_reel.mp4`
+  - File size: 1,080,669 bytes (~1.08 MB)
+  - Duration: 29.12 s
+  - Video stream: H.264 (High), 1080x1920 (9:16 DAR), 25.0 fps, 224 kb/s
+  - Audio stream: AAC (LC), 24,000 Hz, mono, 72 kb/s, mean_volume -20.9 dB
+  - Box layout: `ftyp` (offset 0), `free` (offset 32), `mdat` (offset 40, size 1,061,852), `moov` (offset 1,061,892, size 18,777)
+  - Faststart: `False` (moov atom placed after mdat atom)
+- Accompaniments:
+  - Subtitles: `subs.srt` (6 cues, 27.0s duration coverage = 92.7%)
+  - Plan metadata: `current_video_plan.json` (Quantum Computing topic, caption with 4 hashtags)
+
+### 2. Execution Results
+- **Run A — Existing-video mode, platforms `[instagram, youtube]`, critic OFF**:
+  - Script command: `PY agents/qc/scripts/real_run.py runs/qc-real-run-a --critic off`
+  - Result: `passed = false`
+  - Failing checks:
+    - `[BLOCKER] video_faststart_instagram`: Moov atom not at front of file (missing faststart)
+    - `[WARN] text_instagram_hook_length`: First line hook length 179 exceeds 125 characters
+  - All other 23 checks passed (video readable, 9:16 aspect ratio, 1080x1920 resolution, H.264 codec, 25 fps, 29.12s duration, AAC audio, volume -20.9 dB, 1.08 MB size, 4 hashtags within 3-5 limit, valid YouTube title and description).
+
+- **Run B — Same as A with critic ON**:
+  - Script command: `PY agents/qc/scripts/real_run.py runs/qc-real-run-b --critic on`
+  - Result: `passed = false`
+  - Check results: identical to Run A (`video_faststart_instagram` blocker, `text_instagram_hook_length` warning).
+  - Critic execution: live call via `core.llm.complete(agent="qc", ...)`. Primary model `gemini-2.5-flash` hit the free tier daily quota limit (20 req/day), triggering automatic fallback to backup model `gemini-2.5-flash-lite`. Backup model returned 404 (`models/gemini-2.5-flash-lite is no longer available to new users`).
+  - Resilience: QC caught the LLM error gracefully (`ai_review.enabled = true`, `model = ""`, `suggestions = []`, `error` captured). `passed` status remained unaffected.
+  - Usage log: Recorded in `data/core.db` (row id 18: `agent='qc'`, `provider='gemini'`, `model='gemini-2.5-flash-lite'`, `tokens=0`, `latency_ms=1945`, `success=0`, `backup_used=1`).
+
+- **Run C — Normal mode with real SRT & split scene timings**:
+  - Script command: `PY agents/qc/scripts/real_run.py runs/qc-real-run-c --critic off`
+  - Inputs: `sync_merge/output.json` (3 scenes split across 29.12s, duration 29.12s, `subs.srt`), `content/plan.json` with matching scene IDs and narration matching SRT cues.
+  - Result: `passed = false` (only `video_faststart_instagram` blocker failed).
+  - Normal mode checks verified:
+    - `subtitles_validity`: blocker, passed (6 cues parsed)
+    - `subtitles_cue_coverage`: warn, passed (92.7% >= 80%)
+    - `scene_timings_validity`: blocker, passed (all 3 scenes within 0..29.12s)
+    - `scene_timings_continuity`: warn, passed (no overlaps or gaps > 1.0s)
+    - `narration_word_coverage`: blocker, passed (100.0% >= 85%)
+    - `duration_sync_merge_drift`: warn, passed (0.00s drift <= 0.5s limit)
+
+- **Run D — Deliberately bad copy**:
+  - Media: re-encoded to 1920x1080 (16:9) with audio removed (`-an`).
+  - Text: caption with 7 hashtags and 2,448 characters.
+  - Result: `passed = false`
+  - Blockers fired (7 blockers):
+    1. `video_aspect_ratio`: 1.7778 outside 9:16 ±1% range [0.5569, 0.5681]
+    2. `video_resolution_minimum`: 1920x1080 below minimum 720x1280
+    3. `video_faststart_instagram`: Moov atom not at front of file
+    4. `audio_stream_present`: No audio stream present in media file
+    5. `audio_volume_level`: Audio track missing; unable to verify volume level
+    6. `text_instagram_caption_length`: Caption length 2448 exceeds 2200 characters
+    7. `text_instagram_hashtags_max`: Hashtag count 7 exceeds 5 limit
+  - Warnings fired: 6 warnings (`video_resolution_standard`, `video_resolution_youtube_1080p`, `duration_target_range`, `subtitles_validity`, `subtitles_cue_coverage`, `text_instagram_hook_length`).
+
+### 3. Cross-Check (Probe vs FFmpeg Raw)
+
+| Property | Probe Value | FFmpeg `-i` Raw Value | Mismatch? |
+|---|---|---|---|
+| Width | `1080` | `1080` | None |
+| Height | `1920` | `1920` | None |
+| Duration | `29.12 s` | `00:00:29.12` (29.12 s) | None |
+| Video Codec | `h264` | `h264 (High) (avc1)` | None |
+| Frame Rate | `25.0 fps` | `25 fps, 25 tbr` | None |
+| Audio Codec | `aac` | `aac (LC) (mp4a)` | None |
+| File Size | `1,080,669 bytes` | `1,080,669 bytes` (filesystem) | None |
+| Faststart (moov before mdat) | `False` | `False` (`mdat` at 40, `moov` at 1,061,892) | None |
+| Mean Volume | `-20.9 dB` | `-20.9 dB` (`ffmpeg volumedetect`) | None |
+
+Total Mismatches: 0.
+
+### 4. Analysis of Blockers on Real Sample
+- `video_faststart_instagram` (Fired as Blocker):
+  - The legacy pipeline rendered `final_reel.mp4` without `-movflags +faststart`, leaving the `moov` atom at the tail of the container.
+  - While Instagram's API allows some direct file uploads that re-encode server-side, Instagram progressive upload and Reels developer guidelines require faststart for streaming startup.
+  - As a blocker, this prevents unmodified legacy videos from passing QC without re-muxing. In Prompt 4, consider whether `video_faststart_instagram` should be a warning in existing-video mode or automatically repaired via faststart re-muxing.
+- `text_instagram_hook_length` (Fired as Warn):
+  - Legacy caption did not contain line breaks, so the first line was 179 characters (exceeding 125 char hook threshold before Instagram's `...more` fold). Correctly emitted as a warning and did not fail the run.
+
