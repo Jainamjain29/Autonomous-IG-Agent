@@ -44,6 +44,12 @@ def load_agent_config(config_path: Union[str, Path] = "config/agents.yaml") -> D
         return _AGENTS_CONFIG_CACHE
 
     path = Path(config_path)
+    if not path.is_absolute() and not path.exists():
+        project_root = Path(__file__).resolve().parent.parent.parent
+        candidate = project_root / config_path
+        if candidate.exists():
+            path = candidate
+
     if not path.exists():
         _AGENTS_CONFIG_CACHE = {
             "defaults": {
