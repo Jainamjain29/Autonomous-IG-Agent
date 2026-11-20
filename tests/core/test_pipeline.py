@@ -76,7 +76,16 @@ class FakeQCAgent(BaseAgent):
             {
                 "passed": self.should_pass,
                 "checks": [{"name": "aspect_ratio", "passed": self.should_pass, "severity": "blocker"}],
-                "ai_review": "Looking good" if self.should_pass else "Quality poor",
+                "ai_review": {
+                    "enabled": False,
+                    "model": "gemini-2.5-flash",
+                    "suggestions": [
+                        {"area": "pacing", "suggestion": "Pacing looks good"}
+                    ] if self.should_pass else [
+                        {"area": "quality", "suggestion": "Fix resolution"}
+                    ],
+                    "error": None,
+                },
             },
         )
         status = "ok" if self.should_pass else "failed"

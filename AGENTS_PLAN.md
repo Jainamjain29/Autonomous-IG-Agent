@@ -135,7 +135,17 @@ To allow 5 agents to be developed simultaneously without collisions, every devel
       "detail": "Integrated LUFS -14.2"
     }
   ],
-  "ai_review": "string"
+  "ai_review": {
+    "enabled": false,
+    "model": "gemini-2.5-flash",
+    "suggestions": [
+      {
+        "area": "pacing",
+        "suggestion": "Trim opening hook by 0.5s to increase retention."
+      }
+    ],
+    "error": null
+  }
 }
 ```
 
