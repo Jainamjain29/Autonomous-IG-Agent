@@ -23,8 +23,9 @@ from agents.content.prompts import (
     build_video_mode_prompt,
 )
 from agents.content.schemas import PLAN_JSON_SCHEMA
-from agents.content.settings import DEFAULT_BRAND_VOICE, DEFAULT_LANGUAGE
+from agents.content.settings import ALLOWED_MODES, DEFAULT_BRAND_VOICE, DEFAULT_LANGUAGE
 from agents.content.validator import (
+    ensure_character_in_visual_prompts,
     sanitize_and_finalize_plan,
     validate_plan,
 )
@@ -102,14 +103,21 @@ class ContentAgent(BaseAgent):
             except Exception:
                 pass
 
-        mode = (spec.mode or "generate").strip().lower()
+        raw_mode = (spec.mode or "").strip().lower()
+        if raw_mode not in ALLOWED_MODES:
+            return AgentResult(
+                status="failed",
+                error=f"Unknown or unsupported mode '{spec.mode}'. Allowed modes are: {sorted(ALLOWED_MODES)}",
+            )
+        mode = raw_mode
+
         character_desc = self._resolve_character_desc(spec, raw_yaml_dict)
         llm_overrides = self._resolve_llm_overrides(spec, raw_yaml_dict)
 
         # 2. Build system and user prompt for the given mode
         system_prompt = build_system_prompt(brand_voice=self.brand_voice, language=self.language)
 
-        if mode in ("video", "existing video", "existing_video"):
+        if mode == "video":
             # Existing video mode: caption only. NEVER open or analyze the video file.
             topic_or_desc = (
                 spec.topic
@@ -120,7 +128,7 @@ class ContentAgent(BaseAgent):
             user_prompt = build_video_mode_prompt(topic=topic_or_desc)
             expected_script = None
 
-        elif mode in ("script", "user script", "user_script"):
+        elif mode == "script":
             user_script = spec.script or raw_yaml_dict.get("script") or ""
             if not user_script.strip():
                 return AgentResult(
@@ -173,6 +181,10 @@ class ContentAgent(BaseAgent):
             except Exception:
                 plan_data = None
 
+        # Guarantee character description in every visual_prompt before validation
+        if mode == "character" and character_desc and isinstance(plan_data, dict):
+            ensure_character_in_visual_prompts(plan_data.get("scenes", []), character_desc)
+
         # 4. Validate output
         errors = validate_plan(
             plan=plan_data,
@@ -210,6 +222,10 @@ class ContentAgent(BaseAgent):
                         repaired_data = json.loads(repair_resp.text)
                     except Exception:
                         repaired_data = None
+
+                # Guarantee character description on repaired data as well
+                if mode == "character" and character_desc and isinstance(repaired_data, dict):
+                    ensure_character_in_visual_prompts(repaired_data.get("scenes", []), character_desc)
 
                 repair_errors = validate_plan(
                     plan=repaired_data,

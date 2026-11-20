@@ -1,6 +1,9 @@
 """Settings and platform constraints for the Content Agent."""
 from __future__ import annotations
 
+# Allowed execution modes defined by core contracts (core/contracts.py)
+ALLOWED_MODES: set = {"generate", "script", "character", "video"}
+
 # Scene & Timing Constraints
 TARGET_LENGTH_MIN_S: float = 30.0
 TARGET_LENGTH_MAX_S: float = 60.0

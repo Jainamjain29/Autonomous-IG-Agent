@@ -70,7 +70,37 @@
   6. **Atomic File Write**: `plan.json` is written via a unique temporary file (`plan.json.tmp_<hex>`) with disk sync (`os.fsync`) before atomic rename. On failure, temporary files are removed and no partial `plan.json` is left on disk.
   7. **Hermetic Testing**: All tests run completely offline using `core.testing.FakeLLM` with zero network and no API keys.
 
-### 5. Test Counts
+### 5. Test Counts (Step 1)
 - Content Agent tests (`tests/agents/content/`): **18 passed, 0 failed** (0.47s)
 - Core & Agent architecture suite (`tests/agents`, `tests/core`, etc.): **49 passed, 0 failed** (2.20s)
-- Full repository test suite: **344 passed, 1 failed** (345 collected; single failure is pre-existing legacy `tests/test_insight_collector.py::CollectorIntegrationTests::test_summary_logged_and_printed_exactly_once_on_repeated_runs` from prior step).
+- Full repository test suite: **344 passed, 1 failed** (345 collected).
+
+## Step 2: Fix from Review (Prompt 2)
+
+### 1. Fixes Implemented
+- **Character Mode Guaranteed (`ensure_character_in_visual_prompts`)**:
+  - Code now guarantees that the character description from `spec.character_text` is prepended to every scene's `visual_prompt` (`Character: <description>. <scene visual>`) before schema validation.
+  - Case-insensitive substring check prevents duplicate text if the model already included the character description.
+  - Missing character description in raw model output can never fail the run; validator check remains as a safety net.
+- **Hashtags Appear Exactly Once (`extract_and_strip_hashtags`)**:
+  - Strips any inline `#tags` from caption body text and YouTube description.
+  - Combines inline tags with array hashtags, cleans, dedupes case-insensitively, and caps at 5 (`clean_hashtags`).
+  - Appends the cleaned list once at the end of the Instagram caption (`\n\n#tag1 #tag2 ...`).
+  - If YouTube description has tags, the same cleaned list is appended once after stripping inline tags.
+- **Allowed Mode Names Matched to Core (`ALLOWED_MODES`)**:
+  - Aligned strictly with `core/contracts.py:RunSpec` (`generate`, `script`, `character`, `video`).
+  - If `spec.mode` is invalid/unknown, fails immediately with a clear error: `Unknown or unsupported mode '<mode>'. Allowed modes are: ['character', 'generate', 'script', 'video']`.
+
+### 2. Collector Test Verdict: Pre-Existing on Main
+- Tested in main repo folder (`IG_Agent`) on `main` at commit `040600c` / `029f785`:
+  - `python -m pytest tests/test_insight_collector.py -q`: **1 failed, 13 passed in 9.30s**
+  - Failure: `FAILED tests/test_insight_collector.py::CollectorIntegrationTests::test_summary_logged_and_printed_exactly_once_on_repeated_runs` with `AssertionError: 3 != 1`.
+- Tested in `wt-content`:
+  - `python -m pytest tests/test_insight_collector.py -q`: **1 failed, 13 passed in 15.57s** (exact same failure).
+  - `python -m pytest tests/agents/content tests/test_insight_collector.py -q -p no:randomly`: **1 failed, 31 passed in 17.02s** (all 22 content tests pass + 13 collector tests pass).
+- Verdict: The failure is **pre-existing** on main, completely unrelated to `ContentAgent` or its test suite, and untouched per instruction.
+
+### 3. Test Counts (Step 2)
+- Content Agent tests (`tests/agents/content/`): **22 passed, 0 failed** in 1.94s.
+- Full repository test suite: **348 passed, 1 failed (pre-existing), 5 warnings, 18 subtests passed** in 63.88s.
+- Warnings analysis: All 5 warnings originate from `tests/test_insight_analysis.py` (legacy insight analysis and Google/Streamlit deprecations). **0 warnings** come from `agents/content`.

@@ -16,7 +16,11 @@ if repo_root not in sys.path:
 
 from agents.content.agent import ContentAgent
 from agents.content.__main__ import main as cli_main
-from agents.content.validator import clean_hashtags, sanitize_youtube_text
+from agents.content.validator import (
+    clean_hashtags,
+    extract_and_strip_hashtags,
+    sanitize_youtube_text,
+)
 from core.contracts import AgentTask, RunSpec
 from core.runfolder import create_run
 from core.testing import FakeLLM
@@ -232,6 +236,54 @@ class TestContentAgent(unittest.TestCase):
         for s in saved["scenes"]:
             self.assertIn(char_desc.lower(), s["visual_prompt"].lower())
 
+    # 5b. Character mode: guaranteed even if model omits it
+    def test_character_mode_guaranteed_when_model_omits_it(self):
+        char_desc = "A futuristic cyborg dog with silver paws"
+        fake = FakeLLM.get_instance()
+        plan = _make_valid_plan(topic="Cyborg Pets")
+        # Model omits character description entirely from scene prompts
+        for i, s in enumerate(plan["scenes"]):
+            s["visual_prompt"] = f"Generic park scene {i+1} with autumn trees."
+        fake.set_response("content", plan)
+
+        spec = RunSpec(mode="character", topic="Cyborg Pets", character_text=char_desc)
+        _, run_dir, task = self._setup_run(spec)
+
+        agent = ContentAgent(provider="fake")
+        result = agent.run(task)
+
+        self.assertEqual(result.status, "ok")
+        plan_file = run_dir / "content" / "plan.json"
+        with open(plan_file, "r", encoding="utf-8") as f:
+            saved = json.load(f)
+
+        for s in saved["scenes"]:
+            self.assertIn(char_desc.lower(), s["visual_prompt"].lower())
+            self.assertTrue(s["visual_prompt"].startswith(f"Character: {char_desc}."))
+
+    # 5c. Character mode: does not duplicate text if model already included it
+    def test_character_mode_does_not_duplicate_when_already_present(self):
+        char_desc = "A futuristic cyborg dog with silver paws"
+        fake = FakeLLM.get_instance()
+        plan = _make_valid_plan(topic="Cyborg Pets")
+        for s in plan["scenes"]:
+            s["visual_prompt"] = f"A futuristic cyborg dog with silver paws running through a park."
+        fake.set_response("content", plan)
+
+        spec = RunSpec(mode="character", topic="Cyborg Pets", character_text=char_desc)
+        _, run_dir, task = self._setup_run(spec)
+
+        agent = ContentAgent(provider="fake")
+        result = agent.run(task)
+
+        self.assertEqual(result.status, "ok")
+        with open(run_dir / "content" / "plan.json", "r", encoding="utf-8") as f:
+            saved = json.load(f)
+
+        for s in saved["scenes"]:
+            count = s["visual_prompt"].lower().count(char_desc.lower())
+            self.assertEqual(count, 1)
+
     # 6. Existing video mode: never reads video file, scenes=[], script=""
     def test_existing_video_mode_never_reads_video_file(self):
         fake = FakeLLM.get_instance()
@@ -342,6 +394,50 @@ class TestContentAgent(unittest.TestCase):
         self.assertEqual(cleaned[2], "#codinglife")
         self.assertEqual(cleaned[3], "#Python3")
         self.assertEqual(cleaned[4], "#Extra1")
+
+    # 9b. Hashtags appear exactly once: 3 inline in caption + 4 in list -> capped at 5, zero duplicates
+    def test_hashtags_appear_exactly_once_inline_plus_list(self):
+        fake = FakeLLM.get_instance()
+        plan = _make_valid_plan()
+        # 3 inline tags in caption
+        plan["caption"] = "Check out this amazing AI innovation! #tech #AI #innovation"
+        plan["platform_text"]["instagram"]["caption"] = "Check out this amazing AI innovation! #tech #AI #innovation"
+        # 4 tags in list (overlapping with inline tags)
+        plan["hashtags"] = ["#innovation", "#gadgets", "#future", "#ai"]
+        # YouTube description with inline tags
+        plan["platform_text"]["youtube"]["description"] = "Full video breakdown. #tech #video"
+
+        fake.set_response("content", plan)
+
+        spec = RunSpec(mode="generate", topic="Hashtag Once Test")
+        _, run_dir, task = self._setup_run(spec)
+
+        agent = ContentAgent(provider="fake")
+        result = agent.run(task)
+
+        self.assertEqual(result.status, "ok")
+        with open(run_dir / "content" / "plan.json", "r", encoding="utf-8") as f:
+            saved = json.load(f)
+
+        ig_caption = saved["platform_text"]["instagram"]["caption"]
+        # Verify body text has no inline tags
+        body = ig_caption.split("\n\n")[0]
+        self.assertNotIn("#", body)
+        self.assertEqual(body, "Check out this amazing AI innovation!")
+
+        # Verify hashtags are appended once and <= 5
+        tags = saved["hashtags"]
+        self.assertLessEqual(len(tags), 5)
+        self.assertEqual(len(tags), len(set(t.lower() for t in tags)))  # no duplicates
+
+        # Tags in IG caption must match saved["hashtags"] exactly
+        tags_line = ig_caption.split("\n\n")[1]
+        self.assertEqual(tags_line, " ".join(tags))
+
+        # Check YouTube description
+        yt_desc = saved["platform_text"]["youtube"]["description"]
+        yt_body = yt_desc.split("\n\n")[0]
+        self.assertNotIn("#", yt_body)
 
     # 10. Platform length limits
     def test_caption_title_description_length_limits(self):
@@ -464,7 +560,20 @@ class TestContentAgent(unittest.TestCase):
         for call in fake.recorded_calls:
             self.assertEqual(call["agent"], "content")
 
-    # 16. Atomic write: no partial/temp files left on failure
+    # 16. Unknown mode case fails with clear error
+    def test_unknown_mode_fails_with_clear_error(self):
+        spec = RunSpec(mode="teleportation", topic="Sci-Fi")
+        _, run_dir, task = self._setup_run(spec)
+
+        agent = ContentAgent(provider="fake")
+        result = agent.run(task)
+
+        self.assertEqual(result.status, "failed")
+        self.assertIn("Unknown or unsupported mode 'teleportation'", result.error)
+        self.assertIn("Allowed modes are", result.error)
+        self.assertFalse((run_dir / "content" / "plan.json").exists())
+
+    # 17. Atomic write: no partial/temp files left on failure
     def test_atomic_write_no_partial_file_on_failure(self):
         fake = FakeLLM.get_instance()
         fake.set_response("content", {"corrupt": "data"})
@@ -481,7 +590,7 @@ class TestContentAgent(unittest.TestCase):
             files = list(content_dir.glob("*"))
             self.assertEqual(files, [], f"Expected clean content dir on failure, found: {files}")
 
-    # 17. CLI entrypoint invocation: python -m agents.content <run_dir>
+    # 18. CLI entrypoint invocation: python -m agents.content <run_dir>
     def test_cli_main_invocation(self):
         fake = FakeLLM.get_instance()
         fake.set_response("content", _make_valid_plan())

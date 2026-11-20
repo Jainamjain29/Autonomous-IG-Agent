@@ -18,6 +18,22 @@ from agents.content.settings import (
 )
 
 
+def extract_and_strip_hashtags(text: str) -> Tuple[str, List[str]]:
+    """Extract all inline #tags from text and return (clean_text, extracted_tags).
+    
+    Strips inline #tags from the body text and normalizes spacing.
+    """
+    if not isinstance(text, str):
+        return "", []
+
+    found_tags = re.findall(r"#\w+", text)
+    clean_text = re.sub(r"#\w+", "", text)
+    clean_text = re.sub(r"[ \t]+", " ", clean_text)
+    clean_text = re.sub(r" \n", "\n", clean_text)
+    clean_text = re.sub(r"\n\s*\n+", "\n\n", clean_text).strip()
+    return clean_text, found_tags
+
+
 def clean_hashtags(raw_tags: List[str], max_count: int = IG_MAX_HASHTAGS) -> List[str]:
     """Clean, deduplicate case-insensitively, cap, and format hashtags with '#'.
     
@@ -73,8 +89,22 @@ def check_verbatim_script(scenes: List[Dict[str, Any]], expected_script: str) ->
     )
 
 
+def ensure_character_in_visual_prompts(scenes: List[Dict[str, Any]], character_desc: str) -> None:
+    """Guarantee character description is in every scene's visual_prompt without duplicate text."""
+    desc_clean = character_desc.strip()
+    desc_lower = desc_clean.lower()
+    prefix = f"Character: {desc_clean}. "
+
+    for s in scenes:
+        if not isinstance(s, dict):
+            continue
+        vp = str(s.get("visual_prompt", "")).strip()
+        if desc_lower not in vp.lower():
+            s["visual_prompt"] = f"{prefix}{vp}".strip()
+
+
 def check_character_in_visual_prompts(scenes: List[Dict[str, Any]], character_desc: str) -> Tuple[bool, str]:
-    """Ensure character description is present in every scene's visual_prompt."""
+    """Safety net: Ensure character description is present in every scene's visual_prompt."""
     target = character_desc.strip().lower()
     for s in scenes:
         vp = str(s.get("visual_prompt", "")).lower()
@@ -148,7 +178,7 @@ def validate_plan(
                 errors.append("Field 'platform_text.youtube.description' must be a string")
 
     # Mode-specific validation
-    is_video_mode = mode in ("video", "existing video", "existing_video")
+    is_video_mode = mode == "video"
     scenes = plan.get("scenes", [])
 
     if is_video_mode:
@@ -209,12 +239,12 @@ def validate_plan(
                 errors.append(f"Hook must equal first spoken line (Scene 1 narration). Got hook='{hook}' vs scene 1='{first_narration}'")
 
         # Verbatim script check
-        if mode in ("script", "user script", "user_script") and expected_script:
+        if mode == "script" and expected_script:
             matches, mismatch_err = check_verbatim_script(scenes, expected_script)
             if not matches:
                 errors.append(mismatch_err)
 
-        # Character presence check
+        # Character presence check (safety net)
         if mode == "character" and character_desc:
             has_char, char_err = check_character_in_visual_prompts(scenes, character_desc)
             if not has_char:
@@ -228,18 +258,29 @@ def sanitize_and_finalize_plan(
     mode: str,
     character_desc: Optional[str] = None,
 ) -> Dict[str, Any]:
-    """Sanitize fields, enforce limits, and assemble final platform_text."""
-    # 1. Clean hashtags
-    raw_hashtags = plan.get("hashtags", [])
-    clean_tags = clean_hashtags(raw_hashtags, max_count=IG_MAX_HASHTAGS)
+    """Sanitize fields, enforce hashtag rules, and assemble final platform_text."""
+    # 1. Extract any inline hashtags from caption fields and merge with plan["hashtags"]
+    raw_base_caption = plan.get("caption", "")
+    clean_base_caption, inline_base_tags = extract_and_strip_hashtags(raw_base_caption)
+    plan["caption"] = clean_base_caption
+
+    raw_ig_caption = plan.get("platform_text", {}).get("instagram", {}).get("caption", clean_base_caption)
+    clean_ig_caption, inline_ig_tags = extract_and_strip_hashtags(raw_ig_caption)
+
+    raw_yt_desc = plan.get("platform_text", {}).get("youtube", {}).get("description", clean_base_caption)
+    clean_yt_desc, inline_yt_tags = extract_and_strip_hashtags(raw_yt_desc)
+
+    # Collect all tags (inline + list)
+    all_raw_tags = list(plan.get("hashtags", [])) + inline_base_tags + inline_ig_tags + inline_yt_tags
+    clean_tags = clean_hashtags(all_raw_tags, max_count=IG_MAX_HASHTAGS)
     plan["hashtags"] = clean_tags
 
-    # 2. Instagram caption: code appends hashtags if not already present
-    ig_caption = plan.get("platform_text", {}).get("instagram", {}).get("caption", plan.get("caption", ""))
+    # 2. Instagram caption: strip inline tags, append clean tags once at the end
     if clean_tags:
-        tags_str = " ".join(clean_tags)
-        if tags_str not in ig_caption:
-            ig_caption = f"{ig_caption}\n\n{tags_str}".strip()
+        ig_caption = f"{clean_ig_caption}\n\n{' '.join(clean_tags)}".strip()
+    else:
+        ig_caption = clean_ig_caption
+
     if len(ig_caption) > IG_CAPTION_MAX_CHARS:
         ig_caption = ig_caption[:IG_CAPTION_MAX_CHARS]
     plan.setdefault("platform_text", {}).setdefault("instagram", {})["caption"] = ig_caption
@@ -249,29 +290,30 @@ def sanitize_and_finalize_plan(
     if len(yt_title) > YT_TITLE_MAX_CHARS:
         yt_title = yt_title[:YT_TITLE_MAX_CHARS]
 
-    yt_desc = sanitize_youtube_text(
-        plan.get("platform_text", {}).get("youtube", {}).get("description", plan.get("caption", ""))
-    )
-    if len(yt_desc) > YT_DESCRIPTION_MAX_CHARS:
-        yt_desc = yt_desc[:YT_DESCRIPTION_MAX_CHARS]
+    clean_yt_desc = sanitize_youtube_text(clean_yt_desc)
+    # If hashtags were present in YT description or inline tags existed, append cleaned tags once
+    if inline_yt_tags and clean_tags:
+        clean_yt_desc = f"{clean_yt_desc}\n\n{' '.join(clean_tags)}".strip()
+
+    if len(clean_yt_desc) > YT_DESCRIPTION_MAX_CHARS:
+        clean_yt_desc = clean_yt_desc[:YT_DESCRIPTION_MAX_CHARS]
 
     plan["platform_text"].setdefault("youtube", {})["title"] = yt_title
-    plan["platform_text"]["youtube"]["description"] = yt_desc
+    plan["platform_text"]["youtube"]["description"] = clean_yt_desc
 
     # 4. Mode-specific adjustments
-    is_video_mode = mode in ("video", "existing video", "existing_video")
+    is_video_mode = mode == "video"
     if is_video_mode:
         plan["scenes"] = []
         plan["script"] = ""
     else:
+        # Guarantee character description is in visual prompts
+        if mode == "character" and character_desc:
+            ensure_character_in_visual_prompts(plan.get("scenes", []), character_desc)
+
         # Ensure scene IDs are 1..N
         for idx, scene in enumerate(plan.get("scenes", []), start=1):
             scene["id"] = idx
-            if mode == "character" and character_desc:
-                # Ensure character description is in visual prompt
-                vp = scene.get("visual_prompt", "")
-                if character_desc.lower() not in vp.lower():
-                    scene["visual_prompt"] = f"{vp.rstrip('.')}. Character: {character_desc}."
 
         # Ensure hook equals scene 1 narration
         if plan.get("scenes"):
