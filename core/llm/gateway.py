@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import time
 from dataclasses import dataclass
@@ -69,19 +70,55 @@ def load_agent_config(config_path: Union[str, Path] = "config/agents.yaml") -> D
 def _extract_and_parse_json(raw_text: str) -> Any:
     """Parse JSON string, stripping markdown code fences or conversational text if present."""
     text = raw_text.strip()
-    if text.startswith("```"):
-        text = re.sub(r"^```[a-zA-Z]*\s*", "", text)
-        text = re.sub(r"\s*```$", "", text)
-        text = text.strip()
 
+    # 1. Direct parse attempt
     try:
         return json.loads(text)
-    except json.JSONDecodeError:
-        # Search for curly braces or brackets
-        match = re.search(r"(\{.*\}|\[.*\])", text, re.DOTALL)
-        if match:
-            return json.loads(match.group(1))
-        raise
+    except Exception:
+        pass
+
+    # 2. Extract content from code fences ```json ... ``` or ``` ... ``` anywhere in text
+    fence_match = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", text, re.IGNORECASE)
+    if fence_match:
+        fenced_content = fence_match.group(1).strip()
+        try:
+            return json.loads(fenced_content)
+        except Exception:
+            pass
+
+    # 3. Strip leading/trailing code fences if present at boundaries
+    stripped = re.sub(r"^```[a-zA-Z]*\s*", "", text)
+    stripped = re.sub(r"\s*```$", "", stripped).strip()
+    try:
+        return json.loads(stripped)
+    except Exception:
+        pass
+
+    # 4. Search for the outermost JSON object {...} or array [...]
+    start_obj = text.find("{")
+    start_arr = text.find("[")
+
+    if start_obj != -1 and (start_arr == -1 or start_obj < start_arr):
+        end_idx = text.rfind("}")
+        if end_idx != -1 and end_idx > start_obj:
+            try:
+                return json.loads(text[start_obj : end_idx + 1])
+            except Exception:
+                pass
+    elif start_arr != -1:
+        end_idx = text.rfind("]")
+        if end_idx != -1 and end_idx > start_arr:
+            try:
+                return json.loads(text[start_arr : end_idx + 1])
+            except Exception:
+                pass
+
+    # 5. Regex search fallback
+    match = re.search(r"(\{[\s\S]*\}|\[[\s\S]*\])", text)
+    if match:
+        return json.loads(match.group(1))
+
+    raise json.JSONDecodeError("Could not find valid JSON in response", text, 0)
 
 
 def _validate_json_schema(parsed_data: Any, schema: Dict[str, Any]) -> None:
@@ -134,9 +171,19 @@ def complete(
     backup_timeout_s = backup_cfg.get("timeout_s", timeout_s)
 
     expect_json = json_schema is not None
-    extra_kwargs = {k: v for k, v in overrides.items() if k not in (
-        "provider", "model", "temperature", "timeout_s", "backup"
-    )}
+
+    # Resolve extra config parameters (base_url, max_tokens, api_key_env, etc.)
+    base_extras = {k: v for k, v in defaults.items() if k not in ("provider", "model", "temperature", "timeout_s", "backup")}
+    cfg_extras = {k: v for k, v in agent_cfg.items() if k not in ("provider", "model", "temperature", "timeout_s", "backup")}
+    override_extras = {k: v for k, v in overrides.items() if k not in ("provider", "model", "temperature", "timeout_s", "backup")}
+    backup_extras = {k: v for k, v in backup_cfg.items() if k not in ("provider", "model", "temperature", "timeout_s", "backup")}
+
+    extra_kwargs = {**base_extras, **cfg_extras, **override_extras}
+    if "api_key_env" in extra_kwargs and "api_key" not in extra_kwargs:
+        env_var = extra_kwargs.pop("api_key_env")
+        api_key_val = os.getenv(env_var)
+        if api_key_val:
+            extra_kwargs["api_key"] = api_key_val
 
     start_time = time.perf_counter()
     backup_used = False
@@ -164,6 +211,12 @@ def complete(
             current_model = backup_model
             current_temp = backup_temperature
             current_timeout = backup_timeout_s
+            extra_kwargs = {**base_extras, **backup_extras, **override_extras}
+            if "api_key_env" in extra_kwargs and "api_key" not in extra_kwargs:
+                env_var = extra_kwargs.pop("api_key_env")
+                api_key_val = os.getenv(env_var)
+                if api_key_val:
+                    extra_kwargs["api_key"] = api_key_val
 
         for attempt in range(max_retries_per_tier + 1):
             try:
