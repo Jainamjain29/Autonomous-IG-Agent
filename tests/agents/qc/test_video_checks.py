@@ -117,11 +117,30 @@ class TestVideoChecks(unittest.TestCase):
         probe_fps_high = ProbeData(video_codec="h264", fps=65.0, is_faststart=True)
         self.assertFalse(check_codecs_and_container(probe_fps_high, platforms=["instagram"])[1]["passed"])
 
-        # Faststart False
+        # Faststart False in normal mode (blocker)
         probe_no_fs = ProbeData(video_codec="h264", fps=30.0, is_faststart=False)
-        checks_no_fs = check_codecs_and_container(probe_no_fs, platforms=["instagram"])
+        checks_no_fs = check_codecs_and_container(probe_no_fs, platforms=["instagram"], is_existing_video=False)
         by_name = {c["name"]: c for c in checks_no_fs}
         self.assertFalse(by_name["video_faststart_instagram"]["passed"])
+        self.assertEqual(by_name["video_faststart_instagram"]["severity"], "blocker")
+        self.assertIn("ffmpeg -i in.mp4 -c copy -movflags +faststart out.mp4", by_name["video_faststart_instagram"]["detail"])
+
+        # Faststart False in existing-video mode (warn)
+        checks_no_fs_existing = check_codecs_and_container(probe_no_fs, platforms=["instagram"], is_existing_video=True)
+        by_name_existing = {c["name"]: c for c in checks_no_fs_existing}
+        self.assertFalse(by_name_existing["video_faststart_instagram"]["passed"])
+        self.assertEqual(by_name_existing["video_faststart_instagram"]["severity"], "warn")
+        self.assertIn("ffmpeg -i in.mp4 -c copy -movflags +faststart out.mp4", by_name_existing["video_faststart_instagram"]["detail"])
+
+        # Faststart True in both modes
+        probe_fs_ok = ProbeData(video_codec="h264", fps=30.0, is_faststart=True)
+        c_normal = {c["name"]: c for c in check_codecs_and_container(probe_fs_ok, platforms=["instagram"], is_existing_video=False)}
+        self.assertTrue(c_normal["video_faststart_instagram"]["passed"])
+        self.assertEqual(c_normal["video_faststart_instagram"]["severity"], "blocker")
+
+        c_existing = {c["name"]: c for c in check_codecs_and_container(probe_fs_ok, platforms=["instagram"], is_existing_video=True)}
+        self.assertTrue(c_existing["video_faststart_instagram"]["passed"])
+        self.assertEqual(c_existing["video_faststart_instagram"]["severity"], "warn")
 
     def test_duration_checks(self):
         # 30s video passes Instagram and YouTube and target

@@ -113,7 +113,7 @@ class QCAgent(BaseAgent):
         if probe.readable:
             all_checks.append(check_aspect_ratio(probe))
             all_checks.extend(check_resolution(probe, platforms))
-            all_checks.extend(check_codecs_and_container(probe, platforms))
+            all_checks.extend(check_codecs_and_container(probe, platforms, is_existing_video=is_existing_video))
             all_checks.extend(check_duration(probe, platforms, sync_duration, is_existing_video))
             all_checks.extend(check_audio(probe, platforms))
             all_checks.extend(check_file_size(probe, platforms))

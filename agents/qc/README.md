@@ -18,27 +18,22 @@ The QC (Quality Control) Agent inspects the generated output to ensure aspect ra
   "passed": true,
   "checks": [
     {
-      "name": "aspect_ratio",
+      "name": "video_aspect_ratio",
       "passed": true,
       "severity": "blocker",
-      "detail": "Aspect ratio 0.5625 within 9:16 ±1% tolerance"
+      "detail": "1080x1920 (ratio 0.5625) within 9:16 ±1% tolerance"
     },
     {
-      "name": "resolution_standard",
+      "name": "video_resolution_standard",
       "passed": true,
       "severity": "warn",
-      "detail": "Standard resolution 1080x1920 matched"
+      "detail": "Resolution is standard 1080x1920"
     }
   ],
   "ai_review": {
     "enabled": false,
     "model": "",
-    "suggestions": [
-      {
-        "area": "pacing",
-        "suggestion": "Trim opening hook by 0.5s to increase retention."
-      }
-    ],
+    "suggestions": [],
     "error": null
   }
 }
@@ -55,5 +50,6 @@ The QC (Quality Control) Agent inspects the generated output to ensure aspect ra
 ### Existing-Video Mode Rules
 When running in existing-video mode (`spec.mode == "video"`):
 - Hard format, resolution, duration, audio, file size, caption, and hashtag limits remain blockers.
+- `video_faststart_instagram` check is downgraded to `severity: "warn"` (detail includes fix: `ffmpeg -i in.mp4 -c copy -movflags +faststart out.mp4`).
 - Scene timings and narration word coverage checks are skipped and recorded as `passed: true` with detail `"skipped – existing video mode"`.
 - Subtitle checks are downgraded to `severity: "warn"` only (burned-in subtitles cannot be reliably detected).

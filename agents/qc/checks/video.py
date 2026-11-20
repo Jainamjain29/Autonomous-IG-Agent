@@ -120,8 +120,12 @@ def check_resolution(probe: ProbeData, platforms: List[str]) -> List[Dict[str, A
     return checks
 
 
-def check_codecs_and_container(probe: ProbeData, platforms: List[str]) -> List[Dict[str, Any]]:
-    """Instagram video codec H.264/HEVC (B), fps 23-60 (B), faststart moov atom (B)."""
+def check_codecs_and_container(
+    probe: ProbeData,
+    platforms: List[str],
+    is_existing_video: bool = False,
+) -> List[Dict[str, Any]]:
+    """Instagram video codec H.264/HEVC (B), fps 23-60 (B), faststart moov atom (B in normal, W in existing)."""
     checks = []
 
     if "instagram" in platforms:
@@ -160,19 +164,23 @@ def check_codecs_and_container(probe: ProbeData, platforms: List[str]) -> List[D
             })
 
         # Faststart check
+        faststart_severity = "warn" if is_existing_video else "blocker"
         if probe.is_faststart:
             checks.append({
                 "name": "video_faststart_instagram",
                 "passed": True,
-                "severity": "blocker",
+                "severity": faststart_severity,
                 "detail": "Moov atom at front of file (faststart verified)",
             })
         else:
             checks.append({
                 "name": "video_faststart_instagram",
                 "passed": False,
-                "severity": "blocker",
-                "detail": "Moov atom not at front of file (missing faststart)",
+                "severity": faststart_severity,
+                "detail": (
+                    "Moov atom not at front of file (missing faststart). "
+                    "Fix: ffmpeg -i in.mp4 -c copy -movflags +faststart out.mp4"
+                ),
             })
 
     return checks

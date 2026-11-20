@@ -206,6 +206,94 @@ class TestQCAgent(unittest.TestCase):
         self.assertTrue(checks_by_name["narration_word_coverage"]["passed"])
         self.assertIn("skipped", checks_by_name["narration_word_coverage"]["detail"])
 
+    def test_faststart_normal_mode_non_faststart_fails_blocker(self):
+        non_fs_video = generate_test_video(
+            self.base_dir / "non_fs_normal.mp4",
+            w=1080,
+            h=1920,
+            duration=3.0,
+            with_audio=True,
+            faststart=False,
+        )
+        spec = RunSpec(mode="generate", platforms=["instagram"])
+        run_id, run_dir = self._setup_run(spec, self.valid_plan, non_fs_video, self.valid_srt)
+
+        agent = QCAgent()
+        task = AgentTask(run_id=run_id, run_dir=str(run_dir), spec=spec)
+        res = agent.run(task)
+
+        self.assertEqual(res.status, "failed")
+        self.assertIn("video_faststart_instagram", res.error)
+
+        with open(run_dir / "qc" / "report.json", "r", encoding="utf-8") as f:
+            report = json.load(f)
+        self.assertFalse(report["passed"])
+        checks_by_name = {c["name"]: c for c in report["checks"]}
+        c = checks_by_name["video_faststart_instagram"]
+        self.assertFalse(c["passed"])
+        self.assertEqual(c["severity"], "blocker")
+        self.assertIn("ffmpeg -i in.mp4 -c copy -movflags +faststart out.mp4", c["detail"])
+
+    def test_faststart_existing_video_mode_non_faststart_warns_and_passes(self):
+        non_fs_video = generate_test_video(
+            self.base_dir / "non_fs_existing.mp4",
+            w=1080,
+            h=1920,
+            duration=3.0,
+            with_audio=True,
+            faststart=False,
+        )
+        spec = RunSpec(mode="video", video_path=str(non_fs_video), platforms=["instagram"])
+        run_id, run_dir = self._setup_run(spec, self.valid_plan, non_fs_video, self.valid_srt)
+
+        agent = QCAgent()
+        task = AgentTask(run_id=run_id, run_dir=str(run_dir), spec=spec)
+        res = agent.run(task)
+
+        self.assertEqual(res.status, "ok")
+        with open(run_dir / "qc" / "report.json", "r", encoding="utf-8") as f:
+            report = json.load(f)
+        self.assertTrue(report["passed"])
+        checks_by_name = {c["name"]: c for c in report["checks"]}
+        c = checks_by_name["video_faststart_instagram"]
+        self.assertFalse(c["passed"])
+        self.assertEqual(c["severity"], "warn")
+        self.assertIn("ffmpeg -i in.mp4 -c copy -movflags +faststart out.mp4", c["detail"])
+
+    def test_faststart_passes_in_both_modes(self):
+        fs_video = generate_test_video(
+            self.base_dir / "fs_video.mp4",
+            w=1080,
+            h=1920,
+            duration=3.0,
+            with_audio=True,
+            faststart=True,
+        )
+        # 1. Normal mode
+        spec_gen = RunSpec(mode="generate", platforms=["instagram"])
+        run_id_gen, run_dir_gen = self._setup_run(spec_gen, self.valid_plan, fs_video, self.valid_srt)
+        agent = QCAgent()
+        res_gen = agent.run(AgentTask(run_id=run_id_gen, run_dir=str(run_dir_gen), spec=spec_gen))
+        self.assertEqual(res_gen.status, "ok")
+        with open(run_dir_gen / "qc" / "report.json", "r", encoding="utf-8") as f:
+            rep_gen = json.load(f)
+        self.assertTrue(rep_gen["passed"])
+        c_gen = {c["name"]: c for c in rep_gen["checks"]}["video_faststart_instagram"]
+        self.assertTrue(c_gen["passed"])
+        self.assertEqual(c_gen["severity"], "blocker")
+
+        # 2. Existing video mode
+        spec_vid = RunSpec(mode="video", video_path=str(fs_video), platforms=["instagram"])
+        run_id_vid, run_dir_vid = self._setup_run(spec_vid, self.valid_plan, fs_video, self.valid_srt)
+        res_vid = agent.run(AgentTask(run_id=run_id_vid, run_dir=str(run_dir_vid), spec=spec_vid))
+        self.assertEqual(res_vid.status, "ok")
+        with open(run_dir_vid / "qc" / "report.json", "r", encoding="utf-8") as f:
+            rep_vid = json.load(f)
+        self.assertTrue(rep_vid["passed"])
+        c_vid = {c["name"]: c for c in rep_vid["checks"]}["video_faststart_instagram"]
+        self.assertTrue(c_vid["passed"])
+        self.assertEqual(c_vid["severity"], "warn")
+
     def test_multi_platform_strictest_wins(self):
         # Duration: 185s video (valid for Instagram <=900s, but fails YouTube Shorts <=180s)
         long_probe_video = generate_test_video(

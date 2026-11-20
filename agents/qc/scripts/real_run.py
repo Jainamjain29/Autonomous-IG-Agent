@@ -34,6 +34,20 @@ def main() -> int:
     parser.add_argument("--video-path", default=None, help="Optional video path override")
 
     args = parser.parse_args()
+
+    # Print git commit and QC settings path as the first output line
+    import subprocess
+    try:
+        git_commit = subprocess.check_output(
+            ["git", "rev-parse", "--short", "HEAD"],
+            cwd=repo_root,
+            text=True,
+        ).strip()
+    except Exception:
+        git_commit = "unknown"
+    settings_path = str(Path(settings.__file__).resolve())
+    print(f"[real_run] git_commit={git_commit} settings={settings_path}")
+
     run_dir = Path(args.run_dir).resolve()
 
     if not run_dir.is_dir():
