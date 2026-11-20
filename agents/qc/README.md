@@ -29,6 +29,16 @@ The QC (Quality Control) Agent inspects the generated output to ensure aspect ra
       "detail": "Integrated LUFS -14.2"
     }
   ],
-  "ai_review": "Strong visual pacing, clear hook, subtitles legible."
+  "ai_review": {
+    "enabled": false,
+    "model": "gemini-2.5-flash",
+    "suggestions": [
+      {
+        "area": "pacing",
+        "suggestion": "Trim opening hook by 0.5s to increase retention."
+      }
+    ],
+    "error": null
+  }
 }
 ```
