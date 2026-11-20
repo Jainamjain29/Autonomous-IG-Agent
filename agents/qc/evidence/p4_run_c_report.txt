@@ -1,0 +1,185 @@
+{
+  "passed": false,
+  "checks": [
+    {
+      "name": "video_file_readable",
+      "passed": true,
+      "severity": "blocker",
+      "detail": "Video file is readable (1080x1920, 29.12s)"
+    },
+    {
+      "name": "video_aspect_ratio",
+      "passed": true,
+      "severity": "blocker",
+      "detail": "1080x1920 (ratio 0.5625) within 9:16 ±1% tolerance"
+    },
+    {
+      "name": "video_resolution_minimum",
+      "passed": true,
+      "severity": "blocker",
+      "detail": "Resolution 1080x1920 meets minimum 720x1280"
+    },
+    {
+      "name": "video_resolution_standard",
+      "passed": true,
+      "severity": "warn",
+      "detail": "Resolution is standard 1080x1920"
+    },
+    {
+      "name": "video_resolution_youtube_1080p",
+      "passed": true,
+      "severity": "warn",
+      "detail": "Resolution 1080x1920 within 1080p limit for Shorts"
+    },
+    {
+      "name": "video_codec_instagram",
+      "passed": true,
+      "severity": "blocker",
+      "detail": "Video codec 'h264' supported (H.264/HEVC)"
+    },
+    {
+      "name": "video_fps_instagram",
+      "passed": true,
+      "severity": "blocker",
+      "detail": "Frame rate 25.00 fps within supported 23–60 fps range"
+    },
+    {
+      "name": "video_faststart_instagram",
+      "passed": false,
+      "severity": "blocker",
+      "detail": "Moov atom not at front of file (missing faststart). Fix: ffmpeg -i in.mp4 -c copy -movflags +faststart out.mp4"
+    },
+    {
+      "name": "duration_instagram",
+      "passed": true,
+      "severity": "blocker",
+      "detail": "Duration 29.12s within Instagram limits (3s–15m)"
+    },
+    {
+      "name": "duration_youtube",
+      "passed": true,
+      "severity": "blocker",
+      "detail": "Duration 29.12s within YouTube Shorts limit (<= 180s)"
+    },
+    {
+      "name": "duration_target_range",
+      "passed": true,
+      "severity": "warn",
+      "detail": "Duration 29.12s within target range (15–90s)"
+    },
+    {
+      "name": "duration_sync_merge_drift",
+      "passed": true,
+      "severity": "warn",
+      "detail": "Duration drift 0.00s <= 0.5s limit"
+    },
+    {
+      "name": "audio_stream_present",
+      "passed": true,
+      "severity": "blocker",
+      "detail": "Audio stream present (codec 'aac')"
+    },
+    {
+      "name": "audio_volume_level",
+      "passed": true,
+      "severity": "blocker",
+      "detail": "Audio volume verified (mean_volume -20.9 dB)"
+    },
+    {
+      "name": "audio_codec_instagram",
+      "passed": true,
+      "severity": "warn",
+      "detail": "Audio codec is AAC"
+    },
+    {
+      "name": "file_size_instagram",
+      "passed": true,
+      "severity": "blocker",
+      "detail": "File size 1.0 MB within Instagram 300 MB limit"
+    },
+    {
+      "name": "subtitles_validity",
+      "passed": true,
+      "severity": "blocker",
+      "detail": "SRT file valid (6 cues parsed)"
+    },
+    {
+      "name": "subtitles_cue_coverage",
+      "passed": true,
+      "severity": "warn",
+      "detail": "Subtitle cues cover 92.7% of duration (>= 80% threshold)"
+    },
+    {
+      "name": "scene_timings_validity",
+      "passed": true,
+      "severity": "blocker",
+      "detail": "All 3 scenes have valid timings within 0..29.12s"
+    },
+    {
+      "name": "scene_timings_continuity",
+      "passed": true,
+      "severity": "warn",
+      "detail": "Scene timings continuous without overlaps or gaps > 1.0s"
+    },
+    {
+      "name": "narration_word_coverage",
+      "passed": true,
+      "severity": "blocker",
+      "detail": "Narration word coverage 100.0% >= 85%"
+    },
+    {
+      "name": "text_instagram_caption_present",
+      "passed": true,
+      "severity": "blocker",
+      "detail": "Instagram caption present (172 characters)"
+    },
+    {
+      "name": "text_youtube_title_present",
+      "passed": true,
+      "severity": "blocker",
+      "detail": "YouTube title present (40 characters)"
+    },
+    {
+      "name": "text_instagram_caption_length",
+      "passed": true,
+      "severity": "blocker",
+      "detail": "Caption length 172 <= 2200 characters"
+    },
+    {
+      "name": "text_instagram_hashtags_max",
+      "passed": true,
+      "severity": "blocker",
+      "detail": "Hashtag count 3 <= 5 limit"
+    },
+    {
+      "name": "text_instagram_hashtags_min",
+      "passed": true,
+      "severity": "warn",
+      "detail": "Hashtag count 3 >= 3 recommended minimum"
+    },
+    {
+      "name": "text_instagram_hook_length",
+      "passed": false,
+      "severity": "warn",
+      "detail": "First line hook length 172 exceeds 125 characters"
+    },
+    {
+      "name": "text_youtube_title_length",
+      "passed": true,
+      "severity": "blocker",
+      "detail": "YouTube title length 40 <= 100 characters"
+    },
+    {
+      "name": "text_youtube_description_length",
+      "passed": true,
+      "severity": "blocker",
+      "detail": "YouTube description length 75 <= 5000 characters"
+    }
+  ],
+  "ai_review": {
+    "enabled": false,
+    "model": "",
+    "suggestions": [],
+    "error": null
+  }
+}
