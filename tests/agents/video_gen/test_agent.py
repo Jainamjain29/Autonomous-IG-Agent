@@ -218,6 +218,48 @@ class TestVideoGenAgent(unittest.TestCase):
         self.assertEqual(clip["height"], 64)
         self.assertLess(clip["duration_s"], 2.0)
 
+    def test_string_scene_id_works_end_to_end(self):
+        """String scene IDs ('s1', 's2') are preserved exactly in clips.json and output files."""
+        scenes = [
+            {"id": "s1", "narration": "Intro", "visual_prompt": "Prompt 1", "duration_hint_s": 2.0},
+            {"id": "s2", "narration": "Outro", "visual_prompt": "Prompt 2", "duration_hint_s": 2.0},
+        ]
+        task = self._setup_run(scenes=scenes, provider="placeholder")
+        agent = VideoGenAgent()
+        result = agent.run(task)
+
+        self.assertEqual(result.status, "ok")
+        with open(result.outputs["clips"], "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        self.assertEqual(len(data["clips"]), 2)
+        clip1, clip2 = data["clips"]
+        self.assertEqual(clip1["scene_id"], "s1")
+        self.assertEqual(clip2["scene_id"], "s2")
+        self.assertIn("scene_s1.mp4", clip1["path"])
+        self.assertIn("scene_s2.mp4", clip2["path"])
+        self.assertTrue((Path(task.run_dir) / clip1["path"]).is_file())
+        self.assertTrue((Path(task.run_dir) / clip2["path"]).is_file())
+
+    def test_placeholder_requested_size_and_length(self):
+        """PlaceholderProvider generates exact requested width, height, and clamped duration."""
+        from agents.video_gen.providers.placeholder import PlaceholderProvider
+        provider = PlaceholderProvider()
+        out_file = self.base_dir / "custom_placeholder.mp4"
+        character = CharacterModel.build(description="Test")
+        scene = {"id": "custom", "duration_hint_s": 3.0}
+
+        clip = provider.generate(
+            scene=scene,
+            character=character,
+            out_path=out_file,
+            target={"width": 720, "height": 1280, "duration_s": 3.0},
+        )
+        self.assertEqual(clip.scene_id, "custom")
+        self.assertEqual(clip.width, 720)
+        self.assertEqual(clip.height, 1280)
+        self.assertAlmostEqual(clip.duration_s, 3.0, delta=0.5)
+
 
 if __name__ == "__main__":
     unittest.main()

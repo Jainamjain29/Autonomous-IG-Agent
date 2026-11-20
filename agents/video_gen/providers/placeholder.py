@@ -49,7 +49,7 @@ class PlaceholderProvider(VideoProvider):
     ) -> ClipInfo:
         """Generate a valid MP4 file at requested dimensions and duration."""
         target = target or {}
-        scene_id = int(scene.get("id", 1))
+        scene_id = scene.get("id", 1)
 
         # Clamp duration
         raw_duration = float(target.get("duration_s", scene.get("duration_hint_s", DEFAULT_CLIP_DURATION_S)))

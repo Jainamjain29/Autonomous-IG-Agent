@@ -4,7 +4,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Type
+from typing import Any, Dict, List, Optional, Type, Union
 
 
 @dataclass
@@ -49,7 +49,7 @@ class CharacterModel:
 @dataclass
 class ClipInfo:
     """Metadata representing a generated and probed video clip."""
-    scene_id: int
+    scene_id: Union[int, str]
     path: str
     duration_s: float
     width: int

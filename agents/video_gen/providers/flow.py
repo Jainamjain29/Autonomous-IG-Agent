@@ -103,7 +103,7 @@ class FlowProvider(VideoProvider):
                 "Please run the login helper: python -m agents.video_gen.providers.flow --login"
             )
 
-        scene_id = int(scene.get("id", 1))
+        scene_id = scene.get("id", 1)
         prompt_text = self._build_prompt(scene=scene, character=character)
 
         out_path = Path(out_path)

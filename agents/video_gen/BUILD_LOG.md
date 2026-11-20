@@ -104,30 +104,73 @@
 - Playwright Chromium installed in shared virtual environment (`D:\Insta - AI Agent\IG_Agent\.venv`).
 
 ### Needs Coordination
-1. **Core Stub Test Expectation (`test_stub_returns_not_implemented`)**:
-   - `tests.agents.video_gen.test_stub.TestVideoGenAgentStub.test_stub_returns_not_implemented`: fails with:
-     ```
-     AssertionError: 'not implemented' not found in 'Failed to load content/plan.json: Input file not found: \tmp\content\plan.json'
-     ```
-   - This failure occurs because `VideoGenAgent` is no longer a placeholder returning `not implemented`, but the real production agent implementation verifying input run folder contracts. As instructed by non-negotiable scope rules, we did not modify core's test expectation in `test_stub.py`. Core/orchestration test harnesses should update their assertion once real agents are integrated.
-2. **RunSpec Contract Fields for Video & Character**:
+1. **Duplicate Discovery of `test_missing_plan_json_fails`**:
+   - `tests/test_agents_stubs.py` (located in root `tests/`, outside agent boundary) explicitly imports `TestVideoGenAgentStub` from `tests.agents.video_gen.test_stub`.
+   - Simultaneously, Python unittest discovery recurses through the `agents.video_gen` package namespace, discovering `test_stub.py` directly.
+   - Result: `test_missing_plan_json_fails` appears twice in `python -m unittest discover -s tests -v`:
+     - `test_missing_plan_json_fails (agents.video_gen.test_stub.TestVideoGenAgentStub.test_missing_plan_json_fails)`
+     - `test_missing_plan_json_fails (tests.agents.video_gen.test_stub.TestVideoGenAgentStub.test_missing_plan_json_fails)`
+   - To eliminate this duplicate outside our scope, `tests/test_agents_stubs.py` can either remove `from tests.agents.video_gen.test_stub import TestVideoGenAgentStub` once all agent test suites use package discovery, or filter test cases.
+2. **Model Mapping in `config/agents.yaml` for Claude Real Run**:
+   - `config/agents.yaml` currently points `video_gen` at `gemini-2.5-flash` under provider `gemini`.
+   - As per Prompt 3 instructions, real runs (Run A and Run B) require `video_gen` to be pointed at a Claude model. Because modifying `config/agents.yaml` or `core/` is outside agent scope, coordination is needed to update `config/agents.yaml` to point `video_gen` at Claude (via `anthropic`, `litellm`, or `openai_compat`) before conducting real generation runs.
+3. **RunSpec Contract Fields for Video & Character**:
    - In `core/contracts.py`, `RunSpec` currently defines:
      `mode`, `topic`, `script`, `character_text`, `character_image`, `video_path`, `platforms`, `extra`.
    - There is no first-class `video` dataclass field (e.g. `video: Optional[VideoSpec]`).
    - We read `spec.extra.get("video", {})` and `spec.yaml`'s `video:` block without modifying `core/contracts.py`. Coordinating a typed `VideoSpec` in `RunSpec` in a future core update would improve type safety.
-3. **LLM Gateway Support for Claude / Anthropic Models**:
-   - `core/llm/providers.py` currently implements `gemini`, `openai_compat`, `fake`, and optional `litellm`. There is no dedicated native `anthropic` provider in `core/llm/providers.py`.
-   - In `config/agents.yaml`, `video_gen` is currently mapped to `provider: gemini`, `model: gemini-2.5-flash`.
-   - To point `video_gen` at Claude today without code changes to core, one must either:
-     a) Use `litellm` (if installed) with `ANTHROPIC_API_KEY`, OR
-     b) Use `openai_compat` pointing to an OpenAI-compatible proxy (e.g. LiteLLM proxy, Cloudflare AI Gateway, or OpenRouter with `OPENAI_BASE_URL=https://openrouter.ai/api/v1` and `OPENAI_API_KEY=...`), OR
-     c) Add an `anthropic` provider to `core/llm/providers.py` reading `ANTHROPIC_API_KEY` from `.env` and calling `https://api.anthropic.com/v1/messages`.
-     In `config/agents.yaml`:
-     ```yaml
-     video_gen:
-       provider: anthropic  # or openai_compat
-       model: claude-3-5-sonnet-20241022
-     ```
+
+## Real Run 3/5: Character Slot, ID Fix, Watchdog, Sample Runs
+
+### Model Check (Part A)
+- Verified `config/agents.yaml`: `video_gen` is configured with `provider: gemini`, `model: gemini-2.5-flash`.
+- Per prompt instructions: *"If video_gen is NOT pointed at a Claude model: do Parts B and C, commit, push, then STOP and report — do not do the real run."*
+- Implemented and verified all fixes in Part B, built sample run CLI in Part C, verified 100% test pass across dedicated and full test suites, committed and pushed.
+
+### Fixes Made (Part B)
+1. **Contract Test in `test_stub.py`**:
+   - Replaced old stub behavior test with `test_missing_plan_json_fails`, asserting that missing `content/plan.json` returns `status="failed"` with a clear error message naming `plan.json`.
+2. **Character Consistency Slot (`claude_code` engine)**:
+   - Updated engine so scene HTML does not draw its own character SVG or embedded image.
+   - LLM places literal token `{{CHARACTER}}` inside a container wrapper element that it animates (e.g. `<div class="character">{{CHARACTER}}</div>`). Animate wrapper only. Token is allowed 0 or more times per scene.
+   - Renderer replaces `{{CHARACTER}}` before loading/rendering with identical content across all scenes: `character.svg`, or `<img src="data:...">` when a reference image is supplied.
+   - In `prepare()`: if reference image is supplied, SVG generation is skipped; image bytes/base64 are NEVER sent as text to the LLM.
+   - Scene prompt messages contain only character description and viewBox / aspect ratio; no raw SVG or base64 bytes are sent in scene messages.
+3. **Scene IDs (String & Int Support)**:
+   - Removed all `int()` casting on `scene["id"]`.
+   - Scene ID is preserved exactly as given (`int` or `string`, e.g. `"s1"`, `1`) in `clips.json` records and metadata.
+   - Filesystem-safe strings (`safe_id = re.sub(r"[^a-zA-Z0-9_\-]", "_", str(scene_id))`) are used exclusively for output filenames.
+4. **Render Watchdog**:
+   - Added wall-clock limit `RENDER_TIMEOUT_S = 300` in `agents/video_gen/defaults.py`.
+   - Implemented thread-safe watchdog timer in `claude_code` rendering pipeline that forcefully closes Playwright browser and kills FFmpeg subprocess if rendering times out, raising a clear `"render timed out"` error.
+5. **Per-Engine Retry Budget**:
+   - Defined `ENGINE_RETRIES = {"claude_code": 1, "flow": 2, "placeholder": 2}` in `defaults.py`.
+   - `claude_code` engine already retries once internally with error feedback, so the agent gives it 1 extra attempt; other engines retain 2 retries.
+6. **Typing Import Fix**:
+   - Added missing `Union` import in `agents/video_gen/agent.py`.
+7. **Comprehensive Missing Tests**:
+   - `test_flow_reference_image_upload_and_download_rename`: verifies reference image is passed to `set_input_files` with `sel.INGREDIENT_FILE_INPUT` and downloaded clip is saved to target `out_path`.
+   - `test_placeholder_requested_size_and_length`: verifies `PlaceholderProvider` generates clips at custom dimensions and durations.
+   - `test_character_slot_replaced_with_identical_content_across_two_scenes`: verifies `{{CHARACTER}}` is replaced with identical content across multiple scenes.
+   - `test_no_base64_or_svg_in_scene_prompt_messages`: inspects LLM calls to ensure no SVG or base64 data URIs are transmitted in scene prompts.
+   - `test_string_scene_id_works_end_to_end`: verifies string scene IDs (`"s1"`, `"s2"`) execute end-to-end and are preserved in `clips.json`.
+   - `test_watchdog_fires_on_infinite_loop_render_frame`: verifies watchdog terminates hung/infinite loop `renderFrame` within test timeout.
+
+### Sample Run Script (Part C)
+- Added `agents/video_gen/run_sample.py` supporting:
+  - `--engine` (`claude_code`, `flow`, `placeholder`)
+  - `--scenes` (number of scenes, 1-3)
+  - `--run-id` (resumes an existing run folder)
+  - Pre-configured tech explainer content: "What is an API?" with character "Ovi" and 3 scenes (`s1`, `s2`, `s3`).
+
+### Test Counts
+- **Video Gen Dedicated Suite**:
+  - Command: `python -m unittest discover -s tests\agents\video_gen -t . -v`
+  - Total tests run: **25 tests in 48.2s** (25 passed, 0 failures, 0 errors, 0 skipped).
+- **Full Repository Suite**:
+  - Command: `python -m unittest discover -s tests -v`
+  - Total tests run: **341 tests in 72.1s** (341 passed, 0 failures, 0 errors, 0 skipped).
+
 
 ## Fix 2/5: Test Discovery, Scope Verification, Base Synced with Main
 

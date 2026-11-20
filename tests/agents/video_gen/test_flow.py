@@ -139,6 +139,57 @@ class TestFlowProvider(unittest.TestCase):
         with self.assertRaises(TimeoutError):
             provider.generate(scene=scene, character=character, out_path=out_mp4)
 
+    @mock.patch("agents.video_gen.providers.flow.sync_playwright")
+    def test_flow_reference_image_upload_and_download_rename(self, mock_playwright):
+        """Flow uploads reference image via file input and saves downloaded video to target out_path."""
+        self.profile_dir.mkdir(parents=True, exist_ok=True)
+        (self.profile_dir / "Default").mkdir()
+
+        # Create dummy reference image
+        ref_image = Path(self.flow_tmp_dir.name) / "character_ref.png"
+        ref_image.write_bytes(b"\x89PNG\r\n\x1a\nfakeimage")
+
+        out_mp4 = Path(self.flow_tmp_dir.name) / "renamed_clip.mp4"
+
+        # Mock Playwright
+        mock_p = mock.MagicMock()
+        mock_playwright.return_value.__enter__.return_value = mock_p
+        mock_context = mock.MagicMock()
+        mock_p.chromium.launch_persistent_context.return_value = mock_context
+        mock_page = mock.MagicMock()
+        mock_context.new_page.return_value = mock_page
+        mock_page.is_visible.return_value = True
+
+        mock_download = mock.MagicMock()
+        def fake_save_as(dest):
+            make_tiny_mp4(dest, w=1080, h=1920, seconds=2.0)
+        mock_download.save_as.side_effect = fake_save_as
+
+        mock_dl_info = mock.MagicMock()
+        mock_dl_info.value = mock_download
+        mock_page.expect_download.return_value.__enter__.return_value = mock_dl_info
+
+        provider = FlowProvider()
+        provider.profile_dir = self.profile_dir
+        character = CharacterModel.build(description="Robot", reference_image=str(ref_image))
+        scene = {"id": "s1", "visual_prompt": "Scene with image reference"}
+
+        clip_info = provider.generate(
+            scene=scene,
+            character=character,
+            out_path=out_mp4,
+        )
+
+        self.assertEqual(clip_info.scene_id, "s1")
+        # Verify set_input_files was called with ingredient selector and resolved image path
+        mock_page.set_input_files.assert_called_with(
+            sel.INGREDIENT_FILE_INPUT,
+            str(ref_image.resolve()),
+        )
+        # Verify download.save_as was called with target out_mp4
+        mock_download.save_as.assert_called_with(str(out_mp4))
+        self.assertTrue(out_mp4.is_file())
+
 
 if __name__ == "__main__":
     unittest.main()

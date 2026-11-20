@@ -11,14 +11,15 @@ from agents.video_gen.agent import VideoGenAgent
 
 
 class TestVideoGenAgentStub(unittest.TestCase):
-    """Stub contract test matching core step 0 specifications."""
+    """Contract tests for VideoGenAgent input handling and error reporting."""
 
-    def test_stub_returns_not_implemented(self):
+    def test_missing_plan_json_fails(self):
+        """Missing content/plan.json must fail with a clear error naming plan.json."""
         agent = VideoGenAgent()
-        task = AgentTask(run_id="run_test", run_dir="/tmp", spec=RunSpec())
+        task = AgentTask(run_id="run_test", run_dir="/tmp_nonexistent_run_dir", spec=RunSpec())
         res = agent.run(task)
         self.assertEqual(res.status, "failed")
-        self.assertIn("not implemented", res.error)
+        self.assertIn("plan.json", str(res.error).lower())
 
 
 if __name__ == "__main__":

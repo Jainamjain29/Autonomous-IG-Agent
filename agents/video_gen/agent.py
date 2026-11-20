@@ -1,15 +1,16 @@
 """Video Gen Agent: generates video clips for each planned scene using swappable engines."""
 from __future__ import annotations
 
+import re
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 import yaml
 
 from core.agent import BaseAgent
 from core.contracts import AgentResult, AgentTask
 from core.runfolder import append_event
-from agents.video_gen.defaults import DEFAULT_PROVIDER, MAX_SCENE_RETRIES
+from agents.video_gen.defaults import DEFAULT_PROVIDER, ENGINE_RETRIES, MAX_SCENE_RETRIES
 from agents.video_gen.probe import probe_video
 from agents.video_gen.providers import CharacterModel, get_provider
 
@@ -108,11 +109,13 @@ class VideoGenAgent(BaseAgent):
 
         # 4. Generate clips for each scene (resumable)
         clips_records: List[Dict[str, Any]] = []
+        retries = ENGINE_RETRIES.get(engine.name, MAX_SCENE_RETRIES)
 
         for idx, scene in enumerate(scenes):
-            scene_id = int(scene.get("id", idx + 1))
-            out_clip_path = clips_dir / f"scene_{scene_id}.mp4"
-            legacy_clip_path = agent_dir / f"scene_{scene_id}.mp4"
+            scene_id = scene.get("id", idx + 1)
+            safe_id = re.sub(r"[^a-zA-Z0-9_\-]", "_", str(scene_id))
+            out_clip_path = clips_dir / f"scene_{safe_id}.mp4"
+            legacy_clip_path = agent_dir / f"scene_{safe_id}.mp4"
 
             # Check if valid clip already exists (resumable check)
             existing_valid_path: Optional[Path] = None
@@ -144,11 +147,11 @@ class VideoGenAgent(BaseAgent):
                 })
                 continue
 
-            # Generation loop with up to MAX_SCENE_RETRIES retries
+            # Generation loop with engine-specific retry budget
             success = False
             last_err: Optional[Exception] = None
 
-            for attempt in range(1 + MAX_SCENE_RETRIES):
+            for attempt in range(1 + retries):
                 try:
                     engine.generate(
                         scene=scene,
@@ -191,7 +194,7 @@ class VideoGenAgent(BaseAgent):
             if not success:
                 err_msg = (
                     f"Failed to generate clip for scene {scene_id} after "
-                    f"{1 + MAX_SCENE_RETRIES} attempts: {last_err}"
+                    f"{1 + retries} attempts: {last_err}"
                 )
                 _safe_append_event(task.run_dir, "video_gen_failed", {
                     "scene_id": scene_id,

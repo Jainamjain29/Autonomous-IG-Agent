@@ -254,6 +254,113 @@ class TestClaudeCodeProvider(unittest.TestCase):
         provider2.prepare(run_ctx=run_ctx, character=character)
         self.assertEqual(len(self.fake.recorded_calls), call_count_before)
 
+    def test_character_slot_replaced_with_identical_content_across_two_scenes(self):
+        """{{CHARACTER}} slot token is replaced with identical content across multiple scenes."""
+        self.fake.set_response("video_gen", VALID_DESIGN_KIT)
+        provider = ClaudeCodeProvider()
+        character = CharacterModel.build(description="Friendly robot")
+        run_ctx = {"run_dir": str(self.run_dir), "agent_dir": self.agent_dir}
+        provider.prepare(run_ctx=run_ctx, character=character)
+
+        # HTML template containing {{CHARACTER}} slot
+        html_slot_scene1 = VALID_HTML.replace('<div id="box"></div>', '<div id="box">{{CHARACTER}}</div>')
+        html_slot_scene2 = VALID_HTML.replace('<div id="box"></div>', '<div id="box" class="scene2">{{CHARACTER}}</div>')
+
+        # Generate scene 1
+        self.fake.set_response("video_gen", {"html": html_slot_scene1})
+        out1 = self.agent_dir / "clips" / "scene_1.mp4"
+        provider.generate(
+            scene={"id": 1, "visual_prompt": "Scene 1", "duration_hint_s": 2.0},
+            character=character,
+            out_path=out1,
+            target={"fps": 5, "duration_s": 2.0},
+        )
+
+        # Generate scene 2
+        self.fake.set_response("video_gen", {"html": html_slot_scene2})
+        out2 = self.agent_dir / "clips" / "scene_2.mp4"
+        provider.generate(
+            scene={"id": 2, "visual_prompt": "Scene 2", "duration_hint_s": 2.0},
+            character=character,
+            out_path=out2,
+            target={"fps": 5, "duration_s": 2.0},
+        )
+
+        # Verify saved scene HTML files
+        scenes_dir = self.agent_dir / "scenes"
+        html1_text = (scenes_dir / "1.html").read_text(encoding="utf-8")
+        html2_text = (scenes_dir / "2.html").read_text(encoding="utf-8")
+
+        self.assertNotIn("{{CHARACTER}}", html1_text)
+        self.assertNotIn("{{CHARACTER}}", html2_text)
+        self.assertIn(VALID_DESIGN_KIT["character_svg"], html1_text)
+        self.assertIn(VALID_DESIGN_KIT["character_svg"], html2_text)
+
+    def test_no_base64_or_svg_in_scene_prompt_messages(self):
+        """Scene prompt messages contain character description and viewBox, but NO raw SVG or base64 bytes."""
+        self.fake.set_response("video_gen", VALID_DESIGN_KIT)
+        provider = ClaudeCodeProvider()
+        character = CharacterModel.build(description="Teal Visor Robot")
+        run_ctx = {"run_dir": str(self.run_dir), "agent_dir": self.agent_dir}
+        provider.prepare(run_ctx=run_ctx, character=character)
+
+        self.fake.set_response("video_gen", {"html": VALID_HTML})
+        out1 = self.agent_dir / "clips" / "scene_inspect.mp4"
+        provider.generate(
+            scene={"id": 1, "visual_prompt": "Inspector prompt", "duration_hint_s": 2.0},
+            character=character,
+            out_path=out1,
+            target={"fps": 5, "duration_s": 2.0},
+        )
+
+        # Inspect recorded calls
+        scene_calls = [c for c in self.fake.recorded_calls if any("Scene ID:" in m.get("content", "") for m in c.get("messages", []))]
+        self.assertTrue(len(scene_calls) >= 1)
+        for call in scene_calls:
+            for msg in call["messages"]:
+                content = msg.get("content", "")
+                self.assertNotIn("<svg", content)
+                self.assertNotIn("data:image", content)
+                self.assertNotIn("base64", content)
+            # Ensure character description and slot contract instruction are present
+            user_msg = next(m["content"] for m in call["messages"] if m["role"] == "user")
+            self.assertIn("Teal Visor Robot", user_msg)
+            self.assertIn("{{CHARACTER}}", user_msg)
+
+    def test_watchdog_fires_on_infinite_loop_render_frame(self):
+        """Watchdog closes browser and terminates stuck renderFrame with clear 'render timed out' error."""
+        self.fake.set_response("video_gen", VALID_DESIGN_KIT)
+        # Use a short timeout of 1.0 second for test speed
+        provider = ClaudeCodeProvider(render_timeout_s=1.0)
+        character = CharacterModel.build(description="Robot")
+        run_ctx = {"run_dir": str(self.run_dir), "agent_dir": self.agent_dir}
+        provider.prepare(run_ctx=run_ctx, character=character)
+
+        infinite_loop_html = """<!DOCTYPE html>
+<html>
+<head>
+  <script>
+    window.renderFrame = function(t) {
+      var start = Date.now();
+      while (Date.now() - start < 30000) {}
+    };
+  </script>
+</head>
+<body>Infinite loop</body>
+</html>"""
+
+        self.fake.set_response("video_gen", {"html": infinite_loop_html})
+        out_mp4 = self.agent_dir / "clips" / "scene_timeout.mp4"
+
+        with self.assertRaises(RuntimeError) as ctx:
+            provider.generate(
+                scene={"id": "timeout_scene", "visual_prompt": "Hang", "duration_hint_s": 2.0},
+                character=character,
+                out_path=out_mp4,
+                target={"fps": 5, "duration_s": 2.0},
+            )
+        self.assertIn("render timed out", str(ctx.exception).lower())
+
 
 if __name__ == "__main__":
     unittest.main()
