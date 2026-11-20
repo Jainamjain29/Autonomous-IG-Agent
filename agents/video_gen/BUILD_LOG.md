@@ -158,8 +158,8 @@
 ### Test Counts
 - **Video Gen Dedicated Suite**:
   - Command: `python -m unittest discover -s tests\agents\video_gen -t . -v`
-  - Total tests run: **37 tests** (18 distinct video_gen tests run directly across `test_agent.py`, `test_claude_code.py`, `test_flow.py`, `test_probe.py`, plus 19 run on `TestVideoGenAgentStub`), with 0 skipped tests and 1 expected failure on `test_stub_returns_not_implemented`.
+  - Total tests run: **19 tests in 16.6s** (18 passed, 0 skipped, 1 expected stub failure on `test_stub_returns_not_implemented`).
 - **Full Repository Suite**:
   - Command: `python -m unittest discover -s tests -v`
-  - Total tests run: **330 tests** (increased from 312 baseline; 329 passed, 1 expected stub failure, 0 skipped).
+  - Total tests run: **335 tests in 94.1s** (increased from 312 baseline; 333 passed, 0 skipped, 2 expected stub failures on `test_stub_returns_not_implemented` due to root and submodule discovery).
 
