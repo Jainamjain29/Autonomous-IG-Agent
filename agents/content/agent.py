@@ -83,6 +83,20 @@ class ContentAgent(BaseAgent):
                 overrides["provider"] = raw_dict["provider"]
             elif "provider" in spec.extra:
                 overrides["provider"] = spec.extra["provider"]
+        if "model" not in overrides:
+            env_model = os.getenv("LLM_MODEL")
+            if env_model:
+                overrides["model"] = env_model
+            elif "model" in raw_dict:
+                overrides["model"] = raw_dict["model"]
+            elif "model" in spec.extra:
+                overrides["model"] = spec.extra["model"]
+        if "backup" not in overrides:
+            env_backup_model = os.getenv("LLM_BACKUP_MODEL")
+            if env_backup_model:
+                overrides["backup"] = {"model": env_backup_model}
+            elif "backup" in spec.extra:
+                overrides["backup"] = spec.extra["backup"]
         return overrides
 
     def run(self, task: AgentTask) -> AgentResult:

@@ -104,3 +104,102 @@
 - Content Agent tests (`tests/agents/content/`): **22 passed, 0 failed** in 1.94s.
 - Full repository test suite: **348 passed, 1 failed (pre-existing), 5 warnings, 18 subtests passed** in 63.88s.
 - Warnings analysis: All 5 warnings originate from `tests/test_insight_analysis.py` (legacy insight analysis and Google/Streamlit deprecations). **0 warnings** come from `agents/content`.
+
+## Step 3: Real Run Execution & Evaluation (Prompt 3)
+
+### 1. Real Model Configuration & Upstream Quota Note
+- In accordance with `core/llm` architecture, real Gemini API calls were executed with the live API key from `.env`.
+- **Upstream Model Availability & Resolution**:
+  - `gemini-2.5-flash` reached its Google Free Tier daily request limit (20 req/day).
+  - `gemini-2.5-flash-lite` returned HTTP 404 from Google AI Studio ("model models/gemini-2.5-flash-lite is no longer available to new users. Please update your code to use models/gemini-3.5-flash-lite").
+  - `agents.content.agent._resolve_llm_overrides` was updated to support model overrides via environment variable `LLM_MODEL` / `LLM_BACKUP_MODEL`, routing smoothly to active production models `gemini-3.5-flash` and `gemini-3.5-flash-lite`.
+
+### 2. Real-Run Execution & LLM Usage Table
+
+| Run ID | Mode | Exit Code | Provider | Model | Calls (Repairs) | Tokens In | Tokens Out | Latency (ms) | Est. Cost (USD) | Status |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `run_20261120_174447_b83809` | `generate` | 0 | gemini | `gemini-3.5-flash` | 1 (0) | 2,951 | 1,853 | 50,866 | $0.001554 | PASS |
+| `run_20261120_174447_2db5b2` | `script` | 0 | gemini | `gemini-3.5-flash-lite` | 2 (1) | 4,419 | 2,078 | 287,561 | $0.001910 | PASS |
+| `run_20261120_174447_8d5e1f` | `character` | 0 | gemini | `gemini-3.5-flash-lite` | 1 (0) | 2,547 | 1,722 | 102,201 | $0.001415 | PASS |
+| `run_20261120_174447_758573` | `video` | 0 | gemini | `gemini-3.5-flash` | 1 (0) | 1,644 | 668 | 153,105 | $0.000647 | PASS |
+| **Total** | — | — | — | — | **5 (1 repair)** | **11,561** | **6,321** | — | **$0.005526** | **4 / 4 PASS** |
+
+### 3. Report-Only Check Details
+
+#### Run A: `generate` (`run_20261120_174447_b83809`)
+- **Topic**: "What is an AI agent and how is it different from a chatbot?"
+- **Scenes**: 6 scenes, durations `[6.0, 7.0, 7.0, 8.0, 6.0, 5.0]`, total = **39.0s** (Target: 30–60s) -> **PASS**
+- **Speech Fit (words / 2.5 wps vs hint + 1.0s)**:
+  - Scene 1: 13 words -> 5.20s needed vs 6.0s hint (PASS)
+  - Scene 2: 19 words -> 7.60s needed vs 7.0s hint (PASS, <= 8.0s)
+  - Scene 3: 18 words -> 7.20s needed vs 7.0s hint (PASS, <= 8.0s)
+  - Scene 4: 19 words -> 7.60s needed vs 8.0s hint (PASS, <= 9.0s)
+  - Scene 5: 13 words -> 5.20s needed vs 6.0s hint (PASS)
+  - Scene 6: 16 words -> 6.40s needed vs 5.0s hint (**FLAGGED**: 6.4s > 5.0s + 1.0s)
+- **Hashtags**: 5 unique tags (`#AIAgents`, `#TechExplainer`, `#ArtificialIntelligence`, `#Streamovate`, `#TechTrends`). Deduplicated, max 5 -> **PASS**
+- **Platform Lengths & Format**:
+  - IG Caption: 264 chars (limit <= 2200) -> **PASS**
+  - YT Title: 48 chars (limit <= 100) -> **PASS**
+  - YT Description: 312 chars (limit <= 5000) -> **PASS**
+  - Forbidden chars (`<` or `>`): None -> **PASS**
+- **9:16 Vertical Visual Evaluation**: Solid vertical mobile-first animations and UI graphics with explicit 9:16 framing in scene 1 and centered vertical subjects throughout.
+- **Fixture Created**: Copied `plan.json` to `tests/agents/content/fixtures/sample_plan_generate.json`.
+
+#### Run B: `script` (`run_20261120_174447_2db5b2`)
+- **Input Script**: "Your phone has an AI chip now. But what does it actually do? It runs AI on the device, not in the cloud. That means faster replies, better privacy, and it works offline. Next time you see NPU on a spec sheet, now you know."
+- **Verbatim Match**:
+  - Joined narration: "Your phone has an AI chip now. But what does it actually do? It runs AI on the device, not in the cloud. That means faster replies, better privacy, and it works offline. Next time you see NPU on a spec sheet, now you know."
+  - Whitespace-normalized match: **100% True** (exact word-for-word match across 5 scenes) -> **PASS**
+- **Scenes**: 5 scenes, durations `[6.0, 6.0, 6.0, 6.0, 6.0]`, total = **30.0s** (Target: 30–60s) -> **PASS**
+  - *Note*: Initial generation duration was 28.0s (failed bounds check); automatic repair retry successfully adjusted durations to 30.0s.
+- **Speech Fit (words / 2.5 wps vs hint + 1.0s)**:
+  - Scene 1: 7 words -> 2.80s needed vs 6.0s hint (PASS)
+  - Scene 2: 6 words -> 2.40s needed vs 6.0s hint (PASS)
+  - Scene 3: 10 words -> 4.00s needed vs 6.0s hint (PASS)
+  - Scene 4: 10 words -> 4.00s needed vs 6.0s hint (PASS)
+  - Scene 5: 12 words -> 4.80s needed vs 6.0s hint (PASS)
+  - None flagged.
+- **Hashtags**: 5 unique tags (`#AIChips`, `#SmartphoneTech`, `#NPU`, `#TechExplained`, `#Streamovate`) -> **PASS**
+- **Platform Lengths**: IG Caption 195 chars, YT Title 41 chars, YT Description 162 chars. No `<` or `>` -> **PASS**
+- **9:16 Vertical Visual Evaluation**: Strong vertical focus on hand-held smartphone screens and stacked icon graphics.
+
+#### Run C: `character` (`run_20261120_174447_8d5e1f`)
+- **Character**: "Zeno, a small friendly silver robot with round blue glowing eyes and a teal scarf"
+- **Character Prompt Presence**: Every scene's `visual_prompt` contains Zeno's description **exactly once** (count = 1 for scenes 1, 2, 3, 4, 5, 6) -> **PASS**
+- **Scenes**: 6 scenes, durations `[5.0, 6.0, 6.0, 6.0, 6.0, 5.0]`, total = **34.0s** (Target: 30–60s) -> **PASS**
+- **Speech Fit (words / 2.5 wps vs hint + 1.0s)**:
+  - Scene 1: 18 words -> 7.20s needed vs 5.0s hint (**FLAGGED**: 7.2s > 6.0s)
+  - Scene 2: 17 words -> 6.80s needed vs 6.0s hint (PASS, <= 7.0s)
+  - Scene 3: 19 words -> 7.60s needed vs 6.0s hint (**FLAGGED**: 7.6s > 7.0s)
+  - Scene 4: 18 words -> 7.20s needed vs 6.0s hint (**FLAGGED**: 7.2s > 7.0s)
+  - Scene 5: 13 words -> 5.20s needed vs 6.0s hint (PASS)
+  - Scene 6: 13 words -> 5.20s needed vs 5.0s hint (PASS, <= 6.0s)
+- **Hashtags**: 5 unique tags (`#WiFi`, `#TechExplainer`, `#Streamovate`, `#HowItWorks`, `#Gadgets`) -> **PASS**
+- **Platform Lengths**: IG Caption 167 chars, YT Title 50 chars, YT Description 178 chars. No `<` or `>` -> **PASS**
+- **9:16 Vertical Visual Evaluation**: Excellent 3D character framing with Zeno centered as the vertical anchor in each shot, perfectly suited for character-driven short-form animation.
+
+#### Run D: `video` (`run_20261120_174447_758573`)
+- **Topic**: "Quick demo of three hidden features in the new Windows 11 Snipping Tool"
+- **Contract Verification**: `scenes = []`, `script = ""` -> **PASS**
+- **Video File Untouched Verification**:
+  - MP4 Path: `D:\Insta - AI Agent\IG_Agent\workspace\dummy_clip.mp4`
+  - `LastWriteTime`: 20-09-2026 13:08:20 (unchanged)
+  - `LastAccessTime`: 20-11-2026 22:43:38 (unchanged)
+  - File was strictly never opened, read, or modified -> **PASS**
+- **Hashtags**: 5 unique tags (`#Windows11`, `#TechTips`, `#SnippingTool`, `#ProductivityHacks`, `#Streamovate`) -> **PASS**
+- **Platform Lengths**: IG Caption 300 chars, YT Title 43 chars, YT Description 299 chars. No `<` or `>` -> **PASS**
+- **9:16 Vertical Visual Evaluation**: N/A (`scenes = []` as specified for existing video).
+
+### 4. Issues Identified for Prompt 4 Fixes
+1. **Speech Fit / Narration-to-Duration Ratio**:
+   - In `character` mode, scenes 1, 3, and 4 packed 18–19 words into 5–6s duration hints, requiring speech rates of 3.2–3.6 words per second.
+   - In `generate` mode, scene 6 had 16 words into a 5s hint.
+   - *Fix Opportunity*: Guide prompts to explicitly calibrate scene narration word count to `duration_hint_s * 2.2` words max, or calibrate validator speech fit checks.
+2. **Short Script Duration Calibration**:
+   - For short scripts (e.g., 45 words), the model originally distributed durations summing to 28s (< 30s min limit), requiring a repair cycle.
+   - *Fix Opportunity*: Add explicit guidance in script mode prompt to pace 40–50 word scripts with generous scene duration hints (6–7s each) to meet the 30s threshold on initial generation.
+3. **Character Encoding Artifact**:
+   - In `character` mode script, `boomâ€”your stream` appeared from an unescaped em-dash. Ensure prompts request standard ASCII punctuation or sanitizer strips non-ASCII quotation/dash anomalies.
+4. **Vertical Visual Stacking**:
+   - In `script` mode scene 3, the model suggested a horizontal "split screen graphic". Prompt should emphasize vertical split / stacked compositions for 9:16 mobile screens.
+

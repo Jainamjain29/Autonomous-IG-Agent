@@ -1,0 +1,61 @@
+{
+  "title": "AI Agent vs Chatbot Explained",
+  "topic": "What is an AI agent and how is it different from a chatbot?",
+  "hook": "Think AI chatbots are impressive? AI agents are about to render them obsolete.",
+  "script": "Think AI chatbots are impressive? AI agents are about to render them obsolete. While a normal chatbot just gives you answers based on text prompts, it can't actually do things for you. An AI agent goes a step further. It can reason, set goals, make decisions, and use external tools. Instead of just telling you flight prices, an agent can search, book the flight, and update your calendar automatically. This turns AI from a simple talking assistant into an autonomous digital worker. Want to keep up with the future of tech? Follow Streamovate for quick explainers every day!",
+  "scenes": [
+    {
+      "id": 1,
+      "narration": "Think AI chatbots are impressive? AI agents are about to render them obsolete.",
+      "visual_prompt": "Dynamic split screen showing a standard chat box interface on the left transforming into a glowing futuristic digital assistant network on the right, high tech vertical format 9:16.",
+      "duration_hint_s": 6.0
+    },
+    {
+      "id": 2,
+      "narration": "While a normal chatbot just gives you answers based on text prompts, it can't actually do things for you.",
+      "visual_prompt": "Close up of a smartphone screen typing out text responses in a simple messaging app, clean modern UI aesthetic.",
+      "duration_hint_s": 7.0
+    },
+    {
+      "id": 3,
+      "narration": "An AI agent goes a step further. It can reason, set goals, make decisions, and use external tools.",
+      "visual_prompt": "3D visual of a digital brain connecting node icons representing web search, database, code execution, and API calls, sleek tech style.",
+      "duration_hint_s": 7.0
+    },
+    {
+      "id": 4,
+      "narration": "Instead of just telling you flight prices, an agent can search, book the flight, and update your calendar automatically.",
+      "visual_prompt": "Fast motion graphic animation of a digital interface automatically booking a flight ticket and adding a calendar entry seamlessly.",
+      "duration_hint_s": 8.0
+    },
+    {
+      "id": 5,
+      "narration": "This turns AI from a simple talking assistant into an autonomous digital worker.",
+      "visual_prompt": "A modern desk setup with holographic visual cues illustrating automated workflows finishing tasks smoothly.",
+      "duration_hint_s": 6.0
+    },
+    {
+      "id": 6,
+      "narration": "Want to keep up with the future of tech? Follow Streamovate for quick explainers every day!",
+      "visual_prompt": "Streamovate logo branding animation with a call-to-action follow button animation in 3D neon tech style.",
+      "duration_hint_s": 5.0
+    }
+  ],
+  "caption": "Ever wondered what makes an AI agent different from a standard chatbot? Here is a quick breakdown of how autonomous AI agents are changing the game from simple answers to real-world action!",
+  "hashtags": [
+    "#AIAgents",
+    "#TechExplainer",
+    "#ArtificialIntelligence",
+    "#Streamovate",
+    "#TechTrends"
+  ],
+  "platform_text": {
+    "instagram": {
+      "caption": "Ever wondered what makes an AI agent different from a standard chatbot? Here is a quick breakdown of how autonomous AI agents are changing the game from simple answers to real-world action!\n\n#AIAgents #TechExplainer #ArtificialIntelligence #Streamovate #TechTrends"
+    },
+    "youtube": {
+      "title": "AI Agent vs Chatbot: What's the Real Difference?",
+      "description": "What is an AI agent and how does it differ from a chatbot? In this quick tech explainer, Streamovate breaks down how AI agents move beyond simple conversational responses to execute real-world tasks autonomously.\n\nSubscribe to Streamovate for clear, friendly tech explainers on the latest AI trends and products!"
+    }
+  }
+}
