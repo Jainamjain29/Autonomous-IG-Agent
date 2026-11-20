@@ -20,6 +20,7 @@ class RunSpec:
     character_image: Optional[str] = None
     video_path: Optional[str] = None
     platforms: List[str] = field(default_factory=lambda: ["instagram"])
+    video: Optional[Dict[str, Any]] = None
     extra: Dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
@@ -29,7 +30,7 @@ class RunSpec:
     def from_dict(cls, data: Dict[str, Any]) -> RunSpec:
         valid_fields = {
             "mode", "topic", "script", "character_text",
-            "character_image", "video_path", "platforms", "extra"
+            "character_image", "video_path", "platforms", "video", "extra"
         }
         filtered = {k: v for k, v in data.items() if k in valid_fields}
         return cls(**filtered)

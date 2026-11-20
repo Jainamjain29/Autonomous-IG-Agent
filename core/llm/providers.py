@@ -35,6 +35,7 @@ def _call_gemini_rest(
     timeout_s: int = 30,
     expect_json: bool = False,
     api_key: Optional[str] = None,
+    max_tokens: Optional[int] = None,
 ) -> Tuple[str, int, int]:
     """Execute REST call to Google Gemini generateContent."""
     load_dotenv()
@@ -65,6 +66,8 @@ def _call_gemini_rest(
     generation_config: Dict[str, Any] = {
         "temperature": temperature,
     }
+    if max_tokens is not None:
+        generation_config["maxOutputTokens"] = int(max_tokens)
     if expect_json:
         generation_config["responseMimeType"] = "application/json"
 
@@ -119,22 +122,29 @@ def _call_openai_compat_rest(
     expect_json: bool = False,
     base_url: Optional[str] = None,
     api_key: Optional[str] = None,
+    max_tokens: Optional[int] = None,
 ) -> Tuple[str, int, int]:
     """Execute chat completions against an OpenAI-compatible endpoint."""
     load_dotenv()
     url_base = base_url or os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
     url = f"{url_base.rstrip('/')}/chat/completions"
     key = api_key or os.getenv("OPENAI_API_KEY", "")
+    if not key and ("anthropic" in url_base.lower() or "claude" in model.lower()):
+        key = os.getenv("ANTHROPIC_API_KEY", "")
 
     headers = {"Content-Type": "application/json"}
     if key:
         headers["Authorization"] = f"Bearer {key}"
+        headers["x-api-key"] = key
+        headers["anthropic-version"] = "2023-06-01"
 
     payload: Dict[str, Any] = {
         "model": model,
         "messages": messages,
         "temperature": temperature,
     }
+    if max_tokens is not None:
+        payload["max_tokens"] = int(max_tokens)
     if expect_json:
         payload["response_format"] = {"type": "json_object"}
 
@@ -233,6 +243,7 @@ def execute_provider_call(
             timeout_s=timeout_s,
             expect_json=expect_json,
             api_key=kwargs.get("api_key"),
+            max_tokens=kwargs.get("max_tokens"),
         )
     elif provider_clean in ("openai_compat", "openai"):
         return _call_openai_compat_rest(
@@ -243,6 +254,7 @@ def execute_provider_call(
             expect_json=expect_json,
             base_url=kwargs.get("base_url"),
             api_key=kwargs.get("api_key"),
+            max_tokens=kwargs.get("max_tokens"),
         )
     elif provider_clean == "fake":
         return _call_fake(
