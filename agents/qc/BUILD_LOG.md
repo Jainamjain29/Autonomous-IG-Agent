@@ -129,3 +129,37 @@
     - In addition, `core/pipeline.py` specifically reads `qc/report.json` and halts if `report.get("passed")` is false.
     - Thus, `QCAgent` returning `status="failed"` and `passed=False` perfectly satisfies the pipeline contract to stop execution before human review.
   - Conclusion: No core contract gaps exist. Core was not modified.
+
+## Prompt 2 — fixes
+
+### What Changed
+1. **Critic model selection delegated to core configuration**:
+   - Removed `CRITIC_MODEL` from `agents/qc/settings.py`.
+   - Updated `agents/qc/critic.py` so `core.llm.complete(agent="qc", messages=..., json_schema=..., run_id=...)` is invoked with NO `model=` argument, letting `config/agents.yaml` resolve primary and backup models.
+   - Updated `ai_review.model`: populated from `resp.model` upon successful execution, and set to `""` when the critic is disabled or the call fails.
+   - Added unit test `test_ai_critic_complete_called_without_model_kwarg` asserting `complete()` receives no `model` kwarg and `ai_review.model` comes from `resp.model`.
+
+2. **Hashtag threshold comment correction**:
+   - Updated the comment for `INSTAGRAM_MAX_HASHTAGS` in `agents/qc/settings.py` to state that 5 hashtags per post/Reel is a platform-enforced limit on Instagram since 18 Dec 2025 (not a creative guideline), retaining the `"checked 18 Nov 2026"` verification date.
+
+3. **README contract specification alignment**:
+   - Updated `agents/qc/README.md` to document the exact object shape of `ai_review`: `{"enabled": bool, "model": str, "suggestions": [{"area": str, "suggestion": str}], "error": str|null}`.
+   - Clarified that `ai_review` is advisory only (never alters `passed` or check results) and is disabled by default (`settings.ENABLE_AI_CRITIC`).
+   - Replaced example checks with real checks emitted by the agent: `aspect_ratio` (blocker) and `resolution_standard` (warn).
+   - Added a "Severity & Decision Rules" section explaining blocker failure vs warning handling, and existing-video mode rules (coverage skipped with `"skipped – existing video mode"` detail; subtitles warn only).
+
+4. **Report shape schema test**:
+   - Added `test_report_json_exact_contract_shape` asserting `qc/report.json` top-level keys are exactly `{passed, checks, ai_review}`, check keys are `{name, passed, severity, detail}` with `severity in {"blocker", "warn"}`, and `ai_review` has `{enabled, model, suggestions, error}`.
+
+### Test Results
+- **Run (a) - Standalone QC Suite**:
+  - Command: `PY -m unittest discover -s tests/agents/qc -t . -v`
+  - Result: 33 tests passed (Ran 33 tests in ~40s, OK).
+- **Run (b) - Full Test Suite**:
+  - Command: `PY -m unittest discover -s tests -v`
+  - Result: 312 tests passed (Ran 312 tests in ~46s, OK).
+
+### Core & Cross-Agent Gaps
+- **`tests/agents/__init__.py` discovery gap**:
+  - `tests/agents/` previously lacked `__init__.py` on `main`, causing standard test discovery (`python -m unittest discover -s tests -v`) to skip subagent test directories.
+  - Per instructions, this is a core repository item handled by the coordination chat on `main` and was not modified in this branch.

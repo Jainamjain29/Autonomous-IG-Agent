@@ -245,6 +245,7 @@ class TestQCAgent(unittest.TestCase):
                 report = json.load(f)
             ai_rev = report["ai_review"]
             self.assertFalse(ai_rev["enabled"])
+            self.assertEqual(ai_rev["model"], "")
             self.assertEqual(ai_rev["suggestions"], [])
             self.assertIsNone(ai_rev["error"])
 
@@ -301,8 +302,93 @@ class TestQCAgent(unittest.TestCase):
                 self.assertTrue(report["passed"])
                 ai_rev = report["ai_review"]
                 self.assertTrue(ai_rev["enabled"])
+                self.assertEqual(ai_rev["model"], "")
                 self.assertIsNotNone(ai_rev["error"])
                 self.assertIn("LLM simulated crash", ai_rev["error"])
+
+    def test_ai_critic_complete_called_without_model_kwarg(self):
+        """Assert complete() is called without model kwarg and ai_review.model comes from response."""
+        spec = RunSpec(mode="generate", platforms=["instagram"])
+        run_id, run_dir = self._setup_run(spec, self.valid_plan, self.valid_video, self.valid_srt)
+
+        from core.llm.gateway import LLMResponse
+        mock_response = LLMResponse(
+            text=json.dumps({"suggestions": [{"area": "pacing", "suggestion": "Trim opening hook"}]}),
+            data={"suggestions": [{"area": "pacing", "suggestion": "Trim opening hook"}]},
+            provider="gemini",
+            model="config-resolved-gemini-model",
+            tokens_in=100,
+            tokens_out=50,
+            cost_usd=0.0001,
+            latency_ms=120,
+        )
+
+        with mock.patch("core.llm.complete", return_value=mock_response) as mock_complete:
+            with mock.patch.object(settings, "ENABLE_AI_CRITIC", True):
+                agent = QCAgent()
+                task = AgentTask(run_id=run_id, run_dir=str(run_dir), spec=spec)
+                res = agent.run(task)
+
+                self.assertEqual(res.status, "ok")
+                mock_complete.assert_called_once()
+                call_kwargs = mock_complete.call_args.kwargs
+                # Assert complete was called with agent="qc" and NO model kwarg
+                self.assertEqual(call_kwargs.get("agent"), "qc")
+                self.assertNotIn("model", call_kwargs)
+
+                with open(run_dir / "qc" / "report.json", "r", encoding="utf-8") as f:
+                    report = json.load(f)
+
+                ai_rev = report["ai_review"]
+                self.assertTrue(ai_rev["enabled"])
+                self.assertEqual(ai_rev["model"], "config-resolved-gemini-model")
+                self.assertEqual(len(ai_rev["suggestions"]), 1)
+                self.assertEqual(ai_rev["suggestions"][0]["area"], "pacing")
+                self.assertIsNone(ai_rev["error"])
+
+    def test_report_json_exact_contract_shape(self):
+        """Assert qc/report.json top-level keys, check keys and severities, and ai_review shape."""
+        spec = RunSpec(mode="generate", platforms=["instagram"])
+        run_id, run_dir = self._setup_run(spec, self.valid_plan, self.valid_video, self.valid_srt)
+
+        agent = QCAgent()
+        task = AgentTask(run_id=run_id, run_dir=str(run_dir), spec=spec)
+        res = agent.run(task)
+
+        report_path = run_dir / "qc" / "report.json"
+        self.assertTrue(report_path.is_file())
+
+        with open(report_path, "r", encoding="utf-8") as f:
+            report = json.load(f)
+
+        # Top-level keys must be exactly {passed, checks, ai_review}
+        self.assertEqual(set(report.keys()), {"passed", "checks", "ai_review"})
+        self.assertIsInstance(report["passed"], bool)
+        self.assertIsInstance(report["checks"], list)
+        self.assertGreater(len(report["checks"]), 0)
+
+        # Every check has exactly {name, passed, severity, detail} with severity in {blocker, warn}
+        for check in report["checks"]:
+            self.assertEqual(
+                set(check.keys()),
+                {"name", "passed", "severity", "detail"},
+                f"Check keys invalid: {check}",
+            )
+            self.assertIn(check["severity"], {"blocker", "warn"})
+            self.assertIsInstance(check["name"], str)
+            self.assertIsInstance(check["passed"], bool)
+            self.assertIsInstance(check["detail"], str)
+
+        # ai_review has exactly {enabled, model, suggestions, error}
+        ai_review = report["ai_review"]
+        self.assertEqual(
+            set(ai_review.keys()),
+            {"enabled", "model", "suggestions", "error"},
+        )
+        self.assertIsInstance(ai_review["enabled"], bool)
+        self.assertIsInstance(ai_review["model"], str)
+        self.assertIsInstance(ai_review["suggestions"], list)
+        self.assertIn(type(ai_review["error"]), (type(None), str))
 
     def test_pipeline_stops_before_human_review_on_qc_failure(self):
         # Set up a run with existing-video mode but an unreadable/missing video file

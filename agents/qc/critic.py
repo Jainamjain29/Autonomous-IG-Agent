@@ -49,7 +49,6 @@ def run_advisory_critic(
     Returns ai_review structure: {enabled: bool, model: str, suggestions: list, error: str | None}.
     """
     is_enabled = settings.ENABLE_AI_CRITIC if enabled_override is None else enabled_override
-    model_name = settings.CRITIC_MODEL
 
     if not is_enabled:
         return {
@@ -101,7 +100,6 @@ def run_advisory_critic(
             messages=messages,
             json_schema=CRITIC_SCHEMA,
             run_id=run_id,
-            model=model_name,
         )
 
         data = resp.data if isinstance(resp.data, dict) else {}
@@ -116,7 +114,7 @@ def run_advisory_critic(
 
         return {
             "enabled": True,
-            "model": resp.model or model_name,
+            "model": str(resp.model) if resp.model else "",
             "suggestions": clean_suggestions,
             "error": None,
         }
@@ -124,7 +122,7 @@ def run_advisory_critic(
         logger.warning(f"AI critic call failed or timed out: {e}")
         return {
             "enabled": True,
-            "model": model_name,
+            "model": "",
             "suggestions": [],
             "error": str(e),
         }

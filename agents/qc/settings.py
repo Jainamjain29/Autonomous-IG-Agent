@@ -74,7 +74,7 @@ NARRATION_COVERAGE_BLOCKER_THRESHOLD = 0.60
 # Instagram maximum caption length 2,200 characters, checked 18 Nov 2026 (Instagram caption character limit)
 INSTAGRAM_MAX_CAPTION_LENGTH = 2200
 
-# Instagram maximum hashtags 5, checked 18 Nov 2026 (Instagram search & recommendation algorithm guideline)
+# Platform-enforced limit of 5 hashtags per post/Reel (Instagram, since 18 Dec 2025), checked 18 Nov 2026
 INSTAGRAM_MAX_HASHTAGS = 5
 
 # Instagram minimum hashtags 3, checked 18 Nov 2026 (Instagram discoverability guideline)
@@ -92,6 +92,3 @@ YOUTUBE_MAX_DESCRIPTION_LENGTH = 5000
 # AI Critic Configuration
 # AI Critic disabled by default, checked 18 Nov 2026 (Advisory AI review feature flag)
 ENABLE_AI_CRITIC = False
-
-# AI Critic model default gemini-2.5-flash, checked 18 Nov 2026 (QC Agent LLM configuration)
-CRITIC_MODEL = "gemini-2.5-flash"
