@@ -25,15 +25,19 @@ agents:
       timeout_s: 45
 
   video_gen:
-    provider: gemini
-    model: gemini-2.5-flash
+    provider: openai_compat
+    base_url: https://api.anthropic.com/v1/
+    model: claude-opus-5-5
+    api_key_env: ANTHROPIC_API_KEY
     temperature: 0.4
-    timeout_s: 30
+    timeout_s: 180
+    max_tokens: 16000
     backup:
       provider: gemini
-      model: gemini-2.5-flash-lite
+      model: gemini-2.5-flash
       temperature: 0.4
-      timeout_s: 30
+      timeout_s: 180
+      max_tokens: 16000
 
   sync_merge:
     provider: gemini

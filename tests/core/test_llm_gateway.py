@@ -159,6 +159,25 @@ class TestLLMGateway(unittest.TestCase):
         finally:
             conn.close()
 
+    def test_json_parsing_strips_markdown_fences_and_extracts_json_object(self):
+        """Gateway extracts and parses JSON even when response_format is ignored and fences/preludes exist."""
+        from core.llm.gateway import _extract_and_parse_json
+
+        # Test markdown code fences with ```json
+        fenced = "Here is the result:\n```json\n{\"html\": \"<h1>Hello</h1>\"}\n```\nHope that helps!"
+        res1 = _extract_and_parse_json(fenced)
+        self.assertEqual(res1, {"html": "<h1>Hello</h1>"})
+
+        # Test bare fences without language tag
+        bare_fence = "```\n{\"status\": \"ok\", \"count\": 42}\n```"
+        res2 = _extract_and_parse_json(bare_fence)
+        self.assertEqual(res2, {"status": "ok", "count": 42})
+
+        # Test conversational prelude without fences
+        conversational = "Certainly! Here is your requested JSON object: {\"color\": \"blue\"}. Have a great day!"
+        res3 = _extract_and_parse_json(conversational)
+        self.assertEqual(res3, {"color": "blue"})
+
 
 if __name__ == "__main__":
     unittest.main()
