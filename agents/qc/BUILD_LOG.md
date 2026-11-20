@@ -1,5 +1,49 @@
 # QC Agent Build Log
 
+## Final summary (prompt 5)
+
+### 1. What QC Does
+- Performs automated quality checks combining strict deterministic media/text checks with an optional advisory AI critic.
+- Checks span 7 functional areas:
+  - **Video format**: Aspect ratio 9:16 (within ±1%), resolution (min 720x1280 blocker, standard 1080x1920 warn), codecs (H.264/HEVC blocker), fps (23-60 blocker), faststart (`moov` atom at front; blocker in normal mode, warn in existing-video mode).
+  - **Duration**: Platform limits (IG 3-900s, YT Shorts max 180s blockers), target duration (15-90s warn), sync drift (max 0.5s warn).
+  - **Audio**: Audio stream present (blocker), volume check (mean volume > -60 dB, not silent blocker), AAC codec check (warn).
+  - **File size**: IG max 300 MB (blocker).
+  - **Subtitles**: SRT existence and parsing (blocker in normal mode, warn in existing-video mode), cue duration coverage >= 80% (warn).
+  - **Scene & Narration coverage**: Scene timing validity and continuity, narration word coverage in subtitles (skipped as passed in existing-video mode).
+  - **Text & Metadata**: Platform metadata presence, IG caption length (max 2200 chars blocker), hashtag limits (max 5 blocker, target >=3 warn), hook length (first line <=125 chars warn), YouTube title (1-100 chars blocker), YouTube description (max 5000 chars blocker).
+  - **Advisory AI Critic**: Optional LLM evaluation providing next-run improvement suggestions. Off by default (`settings.ENABLE_AI_CRITIC = False`). Advisory only; never modifies `passed` or check statuses.
+
+### 2. Locked Decisions
+- **Critic is advisory only**: Suggestions apply to next-run improvements. Never blocks the pipeline. Off by default (`ENABLE_AI_CRITIC = False`). Model configuration is delegated to `core.llm.complete(agent="qc", ...)`.
+- **Existing-video mode (`spec.mode == "video"`)**: Coverage checks are skipped (`passed=True`, detail `"skipped – existing video mode"`). Subtitle missing/corrupt is demoted to `severity="warn"`. Faststart missing is demoted to `severity="warn"`.
+- **Severity tiers**: `blocker` failure sets `passed = False` and stops pipeline execution before human review. `warn` failures are surfaced in the report but leave `passed = True`.
+- **Platform rules**: Hard platform constraints are blockers; editorial/recommendation targets (15-90s duration, >=3 hashtags, hook <=125 chars) are warnings. When multiple platforms are specified, the strictest limit wins.
+- **Faststart**: Blocker in normal pipeline mode; warning in existing-video mode. Failure detail includes command fix: `ffmpeg -i in.mp4 -c copy -movflags +faststart out.mp4`.
+
+### 3. Test Counts & Verification
+- **QC Test Suite**: 36 tests ran and passed (100% pass rate).
+  - Evidence: `agents/qc/evidence/p5_qc_tests.txt` (`Ran 36 tests in 25.923s - OK`).
+- **Full Test Suite**: 352 tests ran and passed (up from 312 on pre-merge baseline).
+  - Evidence: `agents/qc/evidence/p5_full_suite.txt` (`Ran 352 tests in 55.633s - OK`).
+  - *Discovery note*: `python -m unittest discover -s tests -v` roots at `tests/`, discovering tests under `agents.qc.*` (36 tests, 37 matches with `Select-String -Pattern 'agents\.qc\.'`). The pattern `'tests\.agents\.qc\.'` matches the stub imported in `test_agents_stubs.py` (1 match). When run with `-t .` (`discover -s tests -t . -v`), all 36 tests are labeled `tests.agents.qc.*`. All 36 QC unit tests are actively executing in the full test suite run.
+
+### 4. Real-Run Verification Results
+- Reference evidence files in `agents/qc/evidence/`:
+  - **Run A** (`agents/qc/evidence/p4_run_a_stdout.txt`, `p4_run_a_report.json`): Existing-video mode, IG + YT platforms, critic OFF. Exit 0, `passed=True`. Faststart warned as expected for non-faststart source video (`detail` includes `+faststart` fix).
+  - **Run B** (`agents/qc/evidence/p4_run_b_stdout.txt`, `p4_run_b_report.json`): Normal mode, IG platform, critic ON. Exit 0, `passed=True`. Faststart passed with `+faststart` remuxed video.
+  - **Run C** (`agents/qc/evidence/p4_run_c_stdout.txt`, `p4_run_c_report.json`): Normal mode with deliberate blockers (corrupt srt, duration 950s, 6 hashtags). Exit 0, `passed=False` with `blockers_failed=3`.
+
+### 5. Open Items for Coordination Chat (Jainam)
+1. **`config/agents.yaml` QC models**: Backup model `gemini-2.5-flash-lite` returns 404 (Google API suggests `gemini-3.5-flash-lite`); primary failed in live run B — critic not yet proven live.
+2. **Sync & Merge agent encoding**: Sync & Merge must encode with `-movflags +faststart` so final videos satisfy Instagram faststart requirements out-of-the-box.
+3. **Posting / Approval screen contract**: Posting and approval interfaces must read `ai_review.suggestions` as an array of objects `[{"area": str, "suggestion": str}]`, rather than a plain string.
+
+### 6. Known Limits
+- **Burned-in subtitles**: Subtitles burned directly into pixel data cannot be detected in existing-video mode without an accompanying `.srt` file.
+- **Hook detection**: Hook check evaluates the first line of the caption; multi-sentence single lines or complex layouts may require finer heuristics.
+- **`ffprobe` availability**: On systems without standalone `ffprobe` in PATH, probe fallback invokes `ffmpeg -i` and parses stderr.
+
 ## Step 0: Stub Setup
 - Created package structure, contract documentation, and stub agent.
 - Output specification defined for `qc/report.json`.
