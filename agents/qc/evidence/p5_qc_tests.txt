@@ -1,0 +1,69 @@
+﻿python.exe : test_narration_word_coverage 
+(tests.agents.qc.test_coverage_checks.TestCoverageChecks.test_narration_word_coverage) ... ok
+At line:2 char:1
++ & "D:\Insta - AI Agent\IG_Agent\.venv\Scripts\python" -m unittest dis ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (test_narration_...overage) ... ok:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+test_scene_timings_validity_and_continuity 
+(tests.agents.qc.test_coverage_checks.TestCoverageChecks.test_scene_timings_validity_and_continuity) ... ok
+test_srt_missing_and_corrupt (tests.agents.qc.test_coverage_checks.TestCoverageChecks.test_srt_missing_and_corrupt) 
+... ok
+test_srt_parsing_and_cue_coverage 
+(tests.agents.qc.test_coverage_checks.TestCoverageChecks.test_srt_parsing_and_cue_coverage) ... ok
+test_faststart_detection (tests.agents.qc.test_probe_real_media.TestProbeRealMedia.test_faststart_detection) ... ok
+test_probe_landscape_video (tests.agents.qc.test_probe_real_media.TestProbeRealMedia.test_probe_landscape_video) ... ok
+test_probe_no_audio (tests.agents.qc.test_probe_real_media.TestProbeRealMedia.test_probe_no_audio) ... ok
+test_probe_silent_audio (tests.agents.qc.test_probe_real_media.TestProbeRealMedia.test_probe_silent_audio) ... ok
+test_probe_valid_reel (tests.agents.qc.test_probe_real_media.TestProbeRealMedia.test_probe_valid_reel) ... ok
+test_ai_critic_complete_called_without_model_kwarg 
+(tests.agents.qc.test_qc_agent.TestQCAgent.test_ai_critic_complete_called_without_model_kwarg)
+Assert complete() is called without model kwarg and ai_review.model comes from response. ... ok
+test_ai_critic_disabled (tests.agents.qc.test_qc_agent.TestQCAgent.test_ai_critic_disabled) ... ok
+test_ai_critic_enabled_with_fakellm (tests.agents.qc.test_qc_agent.TestQCAgent.test_ai_critic_enabled_with_fakellm) 
+... ok
+test_ai_critic_failure_does_not_fail_qc 
+(tests.agents.qc.test_qc_agent.TestQCAgent.test_ai_critic_failure_does_not_fail_qc) ... AI critic call failed or timed 
+out: LLM call failed for agent 'qc' on both primary and backup: LLM simulated crash
+ok
+test_blocker_fail_stops_pipeline (tests.agents.qc.test_qc_agent.TestQCAgent.test_blocker_fail_stops_pipeline) ... ok
+test_existing_video_mode (tests.agents.qc.test_qc_agent.TestQCAgent.test_existing_video_mode) ... ok
+test_faststart_existing_video_mode_non_faststart_warns_and_passes 
+(tests.agents.qc.test_qc_agent.TestQCAgent.test_faststart_existing_video_mode_non_faststart_warns_and_passes) ... ok
+test_faststart_normal_mode_non_faststart_fails_blocker 
+(tests.agents.qc.test_qc_agent.TestQCAgent.test_faststart_normal_mode_non_faststart_fails_blocker) ... ok
+test_faststart_passes_in_both_modes (tests.agents.qc.test_qc_agent.TestQCAgent.test_faststart_passes_in_both_modes) 
+... ok
+test_multi_platform_strictest_wins (tests.agents.qc.test_qc_agent.TestQCAgent.test_multi_platform_strictest_wins) ... 
+ok
+test_normal_mode_pass (tests.agents.qc.test_qc_agent.TestQCAgent.test_normal_mode_pass) ... ok
+test_pipeline_stops_before_human_review_on_qc_failure 
+(tests.agents.qc.test_qc_agent.TestQCAgent.test_pipeline_stops_before_human_review_on_qc_failure) ... ok
+test_report_json_exact_contract_shape (tests.agents.qc.test_qc_agent.TestQCAgent.test_report_json_exact_contract_shape)
+Assert qc/report.json top-level keys, check keys and severities, and ai_review shape. ... ok
+test_warn_only_still_passes (tests.agents.qc.test_qc_agent.TestQCAgent.test_warn_only_still_passes) ... ok
+test_qc_agent_instantiation (tests.agents.qc.test_stub.TestQCAgentStub.test_qc_agent_instantiation) ... ok
+test_hashtag_extraction_and_deduplication 
+(tests.agents.qc.test_text_checks.TestTextChecks.test_hashtag_extraction_and_deduplication) ... ok
+test_instagram_caption_length_and_hook 
+(tests.agents.qc.test_text_checks.TestTextChecks.test_instagram_caption_length_and_hook) ... ok
+test_instagram_hashtag_counts (tests.agents.qc.test_text_checks.TestTextChecks.test_instagram_hashtag_counts) ... ok
+test_required_platform_metadata_presence 
+(tests.agents.qc.test_text_checks.TestTextChecks.test_required_platform_metadata_presence) ... ok
+test_youtube_title_and_description 
+(tests.agents.qc.test_text_checks.TestTextChecks.test_youtube_title_and_description) ... ok
+test_aspect_ratio (tests.agents.qc.test_video_checks.TestVideoChecks.test_aspect_ratio) ... ok
+test_audio_checks (tests.agents.qc.test_video_checks.TestVideoChecks.test_audio_checks) ... ok
+test_codecs_and_container (tests.agents.qc.test_video_checks.TestVideoChecks.test_codecs_and_container) ... ok
+test_duration_checks (tests.agents.qc.test_video_checks.TestVideoChecks.test_duration_checks) ... ok
+test_file_size_checks (tests.agents.qc.test_video_checks.TestVideoChecks.test_file_size_checks) ... ok
+test_resolution_minimum_and_standard 
+(tests.agents.qc.test_video_checks.TestVideoChecks.test_resolution_minimum_and_standard) ... ok
+test_video_readable_pass_and_fail 
+(tests.agents.qc.test_video_checks.TestVideoChecks.test_video_readable_pass_and_fail) ... ok
+
+----------------------------------------------------------------------
+Ran 36 tests in 25.923s
+
+OK

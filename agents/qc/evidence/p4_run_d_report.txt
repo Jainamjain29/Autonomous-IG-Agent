@@ -1,0 +1,149 @@
+{
+  "passed": false,
+  "checks": [
+    {
+      "name": "video_file_readable",
+      "passed": true,
+      "severity": "blocker",
+      "detail": "Video file is readable (1920x1080, 29.12s)"
+    },
+    {
+      "name": "video_aspect_ratio",
+      "passed": false,
+      "severity": "blocker",
+      "detail": "Aspect ratio 1.7778 (1920x1080) outside 9:16 ±1% range [0.5569, 0.5681]"
+    },
+    {
+      "name": "video_resolution_minimum",
+      "passed": false,
+      "severity": "blocker",
+      "detail": "Resolution 1920x1080 below minimum 720x1280"
+    },
+    {
+      "name": "video_resolution_standard",
+      "passed": false,
+      "severity": "warn",
+      "detail": "Resolution is 1920x1080, not standard 1080x1920"
+    },
+    {
+      "name": "video_codec_instagram",
+      "passed": true,
+      "severity": "blocker",
+      "detail": "Video codec 'h264' supported (H.264/HEVC)"
+    },
+    {
+      "name": "video_fps_instagram",
+      "passed": true,
+      "severity": "blocker",
+      "detail": "Frame rate 25.00 fps within supported 23–60 fps range"
+    },
+    {
+      "name": "video_faststart_instagram",
+      "passed": false,
+      "severity": "warn",
+      "detail": "Moov atom not at front of file (missing faststart). Fix: ffmpeg -i in.mp4 -c copy -movflags +faststart out.mp4"
+    },
+    {
+      "name": "duration_instagram",
+      "passed": true,
+      "severity": "blocker",
+      "detail": "Duration 29.12s within Instagram limits (3s–15m)"
+    },
+    {
+      "name": "duration_target_range",
+      "passed": true,
+      "severity": "warn",
+      "detail": "Duration 29.12s within target range (15–90s)"
+    },
+    {
+      "name": "duration_sync_merge_drift",
+      "passed": true,
+      "severity": "warn",
+      "detail": "skipped – existing video mode"
+    },
+    {
+      "name": "audio_stream_present",
+      "passed": false,
+      "severity": "blocker",
+      "detail": "No audio stream present in media file"
+    },
+    {
+      "name": "audio_volume_level",
+      "passed": false,
+      "severity": "blocker",
+      "detail": "Audio track missing; unable to verify volume level"
+    },
+    {
+      "name": "file_size_instagram",
+      "passed": true,
+      "severity": "blocker",
+      "detail": "File size 0.8 MB within Instagram 300 MB limit"
+    },
+    {
+      "name": "subtitles_validity",
+      "passed": false,
+      "severity": "warn",
+      "detail": "SRT path missing or not provided (warn only in existing video mode)"
+    },
+    {
+      "name": "subtitles_cue_coverage",
+      "passed": false,
+      "severity": "warn",
+      "detail": "Cannot calculate subtitle coverage (SRT file missing)"
+    },
+    {
+      "name": "scene_timings_validity",
+      "passed": true,
+      "severity": "blocker",
+      "detail": "skipped – existing video mode"
+    },
+    {
+      "name": "scene_timings_continuity",
+      "passed": true,
+      "severity": "warn",
+      "detail": "skipped – existing video mode"
+    },
+    {
+      "name": "narration_word_coverage",
+      "passed": true,
+      "severity": "blocker",
+      "detail": "skipped – existing video mode"
+    },
+    {
+      "name": "text_instagram_caption_present",
+      "passed": true,
+      "severity": "blocker",
+      "detail": "Instagram caption present (2566 characters)"
+    },
+    {
+      "name": "text_instagram_caption_length",
+      "passed": false,
+      "severity": "blocker",
+      "detail": "Caption length 2566 exceeds 2200 characters"
+    },
+    {
+      "name": "text_instagram_hashtags_max",
+      "passed": false,
+      "severity": "blocker",
+      "detail": "Hashtag count 7 exceeds 5 limit (['#tech', '#ai', '#cloud', '#cyber', '#coding', '#python', '#data'])"
+    },
+    {
+      "name": "text_instagram_hashtags_min",
+      "passed": true,
+      "severity": "warn",
+      "detail": "Hashtag count 7 >= 3 recommended minimum"
+    },
+    {
+      "name": "text_instagram_hook_length",
+      "passed": false,
+      "severity": "warn",
+      "detail": "First line hook length 2566 exceeds 125 characters"
+    }
+  ],
+  "ai_review": {
+    "enabled": false,
+    "model": "",
+    "suggestions": [],
+    "error": null
+  }
+}

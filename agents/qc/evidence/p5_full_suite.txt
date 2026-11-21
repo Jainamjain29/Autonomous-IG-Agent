@@ -1,0 +1,1580 @@
+﻿python.exe : test_stub_returns_not_implemented 
+(agents.content.test_stub.TestContentAgentStub.test_stub_returns_not_implemented) ... ok
+At line:2 char:1
++ & "D:\Insta - AI Agent\IG_Agent\.venv\Scripts\python" -m unittest dis ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (test_stub_retur...emented) ... ok:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+test_stub_returns_not_implemented (agents.posting.test_stub.TestPostingAgentStub.test_stub_returns_not_implemented) 
+... ok
+test_narration_word_coverage (agents.qc.test_coverage_checks.TestCoverageChecks.test_narration_word_coverage) ... ok
+test_scene_timings_validity_and_continuity 
+(agents.qc.test_coverage_checks.TestCoverageChecks.test_scene_timings_validity_and_continuity) ... ok
+test_srt_missing_and_corrupt (agents.qc.test_coverage_checks.TestCoverageChecks.test_srt_missing_and_corrupt) ... ok
+test_srt_parsing_and_cue_coverage 
+(agents.qc.test_coverage_checks.TestCoverageChecks.test_srt_parsing_and_cue_coverage) ... ok
+test_faststart_detection (agents.qc.test_probe_real_media.TestProbeRealMedia.test_faststart_detection) ... ok
+test_probe_landscape_video (agents.qc.test_probe_real_media.TestProbeRealMedia.test_probe_landscape_video) ... ok
+test_probe_no_audio (agents.qc.test_probe_real_media.TestProbeRealMedia.test_probe_no_audio) ... ok
+test_probe_silent_audio (agents.qc.test_probe_real_media.TestProbeRealMedia.test_probe_silent_audio) ... ok
+test_probe_valid_reel (agents.qc.test_probe_real_media.TestProbeRealMedia.test_probe_valid_reel) ... ok
+test_ai_critic_complete_called_without_model_kwarg 
+(agents.qc.test_qc_agent.TestQCAgent.test_ai_critic_complete_called_without_model_kwarg)
+Assert complete() is called without model kwarg and ai_review.model comes from response. ... ok
+test_ai_critic_disabled (agents.qc.test_qc_agent.TestQCAgent.test_ai_critic_disabled) ... ok
+test_ai_critic_enabled_with_fakellm (agents.qc.test_qc_agent.TestQCAgent.test_ai_critic_enabled_with_fakellm) ... ok
+test_ai_critic_failure_does_not_fail_qc (agents.qc.test_qc_agent.TestQCAgent.test_ai_critic_failure_does_not_fail_qc) 
+... AI critic call failed or timed out: LLM call failed for agent 'qc' on both primary and backup: LLM simulated crash
+ok
+test_blocker_fail_stops_pipeline (agents.qc.test_qc_agent.TestQCAgent.test_blocker_fail_stops_pipeline) ... ok
+test_existing_video_mode (agents.qc.test_qc_agent.TestQCAgent.test_existing_video_mode) ... ok
+test_faststart_existing_video_mode_non_faststart_warns_and_passes 
+(agents.qc.test_qc_agent.TestQCAgent.test_faststart_existing_video_mode_non_faststart_warns_and_passes) ... ok
+test_faststart_normal_mode_non_faststart_fails_blocker 
+(agents.qc.test_qc_agent.TestQCAgent.test_faststart_normal_mode_non_faststart_fails_blocker) ... ok
+test_faststart_passes_in_both_modes (agents.qc.test_qc_agent.TestQCAgent.test_faststart_passes_in_both_modes) ... ok
+test_multi_platform_strictest_wins (agents.qc.test_qc_agent.TestQCAgent.test_multi_platform_strictest_wins) ... ok
+test_normal_mode_pass (agents.qc.test_qc_agent.TestQCAgent.test_normal_mode_pass) ... ok
+test_pipeline_stops_before_human_review_on_qc_failure 
+(agents.qc.test_qc_agent.TestQCAgent.test_pipeline_stops_before_human_review_on_qc_failure) ... ok
+test_report_json_exact_contract_shape (agents.qc.test_qc_agent.TestQCAgent.test_report_json_exact_contract_shape)
+Assert qc/report.json top-level keys, check keys and severities, and ai_review shape. ... ok
+test_warn_only_still_passes (agents.qc.test_qc_agent.TestQCAgent.test_warn_only_still_passes) ... ok
+test_qc_agent_instantiation (agents.qc.test_stub.TestQCAgentStub.test_qc_agent_instantiation) ... ok
+test_hashtag_extraction_and_deduplication 
+(agents.qc.test_text_checks.TestTextChecks.test_hashtag_extraction_and_deduplication) ... ok
+test_instagram_caption_length_and_hook 
+(agents.qc.test_text_checks.TestTextChecks.test_instagram_caption_length_and_hook) ... ok
+test_instagram_hashtag_counts (agents.qc.test_text_checks.TestTextChecks.test_instagram_hashtag_counts) ... ok
+test_required_platform_metadata_presence 
+(agents.qc.test_text_checks.TestTextChecks.test_required_platform_metadata_presence) ... ok
+test_youtube_title_and_description (agents.qc.test_text_checks.TestTextChecks.test_youtube_title_and_description) ... 
+ok
+test_aspect_ratio (agents.qc.test_video_checks.TestVideoChecks.test_aspect_ratio) ... ok
+test_audio_checks (agents.qc.test_video_checks.TestVideoChecks.test_audio_checks) ... ok
+test_codecs_and_container (agents.qc.test_video_checks.TestVideoChecks.test_codecs_and_container) ... ok
+test_duration_checks (agents.qc.test_video_checks.TestVideoChecks.test_duration_checks) ... ok
+test_file_size_checks (agents.qc.test_video_checks.TestVideoChecks.test_file_size_checks) ... ok
+test_resolution_minimum_and_standard 
+(agents.qc.test_video_checks.TestVideoChecks.test_resolution_minimum_and_standard) ... ok
+test_video_readable_pass_and_fail (agents.qc.test_video_checks.TestVideoChecks.test_video_readable_pass_and_fail) ... 
+ok
+test_stub_returns_not_implemented 
+(agents.sync_merge.test_stub.TestSyncMergeAgentStub.test_stub_returns_not_implemented) ... ok
+test_stub_returns_not_implemented (agents.video_gen.test_stub.TestVideoGenAgentStub.test_stub_returns_not_implemented) 
+... ok
+test_stub_returns_not_implemented 
+(tests.agents.content.test_stub.TestContentAgentStub.test_stub_returns_not_implemented) ... ok
+test_stub_returns_not_implemented 
+(tests.agents.posting.test_stub.TestPostingAgentStub.test_stub_returns_not_implemented) ... ok
+test_qc_agent_instantiation (tests.agents.qc.test_stub.TestQCAgentStub.test_qc_agent_instantiation) ... ok
+test_stub_returns_not_implemented 
+(tests.agents.sync_merge.test_stub.TestSyncMergeAgentStub.test_stub_returns_not_implemented) ... ok
+test_json_parsing_strips_markdown_fences_and_extracts_json_object 
+(tests.core.test_llm_gateway.TestLLMGateway.test_json_parsing_strips_markdown_fences_and_extracts_json_object)
+Gateway extracts and parses JSON even when response_format is ignored and fences/preludes exist. ... ok
+test_json_validation_and_schema_success 
+(tests.core.test_llm_gateway.TestLLMGateway.test_json_validation_and_schema_success)
+Test successful JSON parsing and schema validation. ... ok
+test_repair_retry_failure_raises_clear_error 
+(tests.core.test_llm_gateway.TestLLMGateway.test_repair_retry_failure_raises_clear_error)
+Test that if repair also fails, a clear LLMError is raised. ... ok
+test_repair_retry_on_invalid_json (tests.core.test_llm_gateway.TestLLMGateway.test_repair_retry_on_invalid_json)
+Test that invalid JSON triggers one repair retry and succeeds if repaired. ... ok
+test_transient_retry_and_backup_fallback 
+(tests.core.test_llm_gateway.TestLLMGateway.test_transient_retry_and_backup_fallback)
+Test retry on transient errors and fallback to backup model when primary fails. ... ok
+test_usage_row_written_and_no_prompts_stored 
+(tests.core.test_llm_gateway.TestLLMGateway.test_usage_row_written_and_no_prompts_stored)
+Verify that usage metadata is logged in SQLite and prompt/response text is NEVER stored. ... ok
+test_agents_never_import_each_other 
+(tests.core.test_isolation.TestArchitecturalIsolation.test_agents_never_import_each_other)
+No agent inside agents/<name>/ may import from agents.<other_name>. ... ok
+test_core_never_imports_legacy_modules_or_agents 
+(tests.core.test_isolation.TestArchitecturalIsolation.test_core_never_imports_legacy_modules_or_agents)
+Core modules must never statically import legacy scripts or agent implementations. ... ok
+test_approve_and_publish_success (tests.core.test_pipeline.TestPipelineOrchestrator.test_approve_and_publish_success)
+Pipeline can be approved and then published successfully. ... ok
+test_pipeline_normal_run_halts_at_pending_approval 
+(tests.core.test_pipeline.TestPipelineOrchestrator.test_pipeline_normal_run_halts_at_pending_approval)
+Pipeline runs content -> video_gen -> sync_merge -> qc and STOPS at PENDING_APPROVAL. ... ok
+test_publish_refused_without_approval 
+(tests.core.test_pipeline.TestPipelineOrchestrator.test_publish_refused_without_approval)
+Publishing must fail if approve() was not called. ... ok
+test_video_mode_skips_video_gen_and_sync_merge 
+(tests.core.test_pipeline.TestPipelineOrchestrator.test_video_mode_skips_video_gen_and_sync_merge)
+Mode 'video' skips video_gen and sync_merge stages directly to qc. ... ok
+test_analytics_returns_none_on_error (test_ig_service.IGServiceTest.test_analytics_returns_none_on_error) ... ok
+test_analytics_tolerates_missing_counts (test_ig_service.IGServiceTest.test_analytics_tolerates_missing_counts) ... ok
+test_container_error_raises_immediately (test_ig_service.IGServiceTest.test_container_error_raises_immediately) ... ok
+test_container_expired_raises_immediately (test_ig_service.IGServiceTest.test_container_expired_raises_immediately) 
+... ok
+test_dry_run_skips_media_publish (test_ig_service.IGServiceTest.test_dry_run_skips_media_publish) ... ok
+test_errors_are_tagged_with_failing_step (test_ig_service.IGServiceTest.test_errors_are_tagged_with_failing_step) ... 
+ok
+test_full_resumable_publish (test_ig_service.IGServiceTest.test_full_resumable_publish) ... ok
+test_http_400_raises_with_meta_message (test_ig_service.IGServiceTest.test_http_400_raises_with_meta_message) ... ok
+test_missing_credentials (test_ig_service.IGServiceTest.test_missing_credentials) ... ok
+test_missing_file (test_ig_service.IGServiceTest.test_missing_file) ... ok
+test_missing_uri_builds_documented_upload_url 
+(test_ig_service.IGServiceTest.test_missing_uri_builds_documented_upload_url) ... ok
+test_network_error_redacts_token (test_ig_service.IGServiceTest.test_network_error_redacts_token) ... ok
+test_ngrok_path_errors_are_tagged_with_failing_step 
+(test_ig_service.IGServiceTest.test_ngrok_path_errors_are_tagged_with_failing_step) ... ok
+test_ngrok_publish_dry_run_skips_media_publish 
+(test_ig_service.IGServiceTest.test_ngrok_publish_dry_run_skips_media_publish) ... ok
+test_ngrok_publish_uses_video_url (test_ig_service.IGServiceTest.test_ngrok_publish_uses_video_url) ... ok
+test_ngrok_publish_works_on_instagram_host (test_ig_service.IGServiceTest.test_ngrok_publish_works_on_instagram_host) 
+... ok
+test_non_json_502 (test_ig_service.IGServiceTest.test_non_json_502) ... ok
+test_poll_4xx_is_not_retried (test_ig_service.IGServiceTest.test_poll_4xx_is_not_retried) ... ok
+test_poll_error_field_on_200_is_not_retried 
+(test_ig_service.IGServiceTest.test_poll_error_field_on_200_is_not_retried) ... ok
+test_poll_failure_counter_resets_after_success 
+(test_ig_service.IGServiceTest.test_poll_failure_counter_resets_after_success) ... ok
+test_poll_gives_up_after_4th_consecutive_transient_failure 
+(test_ig_service.IGServiceTest.test_poll_gives_up_after_4th_consecutive_transient_failure) ... ok
+test_poll_retries_transient_failures_with_backoff 
+(test_ig_service.IGServiceTest.test_poll_retries_transient_failures_with_backoff) ... ok
+test_poll_retry_respects_deadline (test_ig_service.IGServiceTest.test_poll_retry_respects_deadline) ... ok
+test_poll_timeout_after_10_minutes (test_ig_service.IGServiceTest.test_poll_timeout_after_10_minutes) ... ok
+test_publish_mode (test_ig_service.IGServiceTest.test_publish_mode) ... ok
+test_resumable_on_instagram_host_refuses_before_any_request 
+(test_ig_service.IGServiceTest.test_resumable_on_instagram_host_refuses_before_any_request) ... ok
+test_timeouts_upload_uses_10_120_everything_else_30 
+(test_ig_service.IGServiceTest.test_timeouts_upload_uses_10_120_everything_else_30) ... ok
+test_upload_failure (test_ig_service.IGServiceTest.test_upload_failure) ... ok
+test_validation_errors_have_no_step (test_ig_service.IGServiceTest.test_validation_errors_have_no_step) ... ok
+test_verify_credentials_facebook_host (test_ig_service.IGServiceTest.test_verify_credentials_facebook_host) ... ok
+test_verify_credentials_instagram_host_skips_debug_token 
+(test_ig_service.IGServiceTest.test_verify_credentials_instagram_host_skips_debug_token) ... ok
+test_verify_credentials_invalid_token (test_ig_service.IGServiceTest.test_verify_credentials_invalid_token) ... ok
+test_checkpoint_result_alert (test_insight_alerts.AlertsEngineTests.test_checkpoint_result_alert)
+When 7d checkpoint is recorded, alert is raised. ... INFO  [alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 0001_baseline, baseline schema
+INFO  [alembic.runtime.migration] Running upgrade 0001_baseline -> 0002_post_tags, create post_tags table
+INFO  [alembic.runtime.migration] Running upgrade 0002_post_tags -> 0003_comments_and_audience, add is_own_account to 
+comments and create comment_labels table
+INFO  [alembic.runtime.migration] Running upgrade 0003_comments_and_audience -> 0004_recommendations, create 
+recommendation_sets, recommendations, and post_feedback tables
+INFO  [alembic.runtime.migration] Running upgrade 0004_recommendations -> 0005_reports_and_alerts, create alerts and 
+weekly_reports tables
+ok
+test_needs_reply_alert (test_insight_alerts.AlertsEngineTests.test_needs_reply_alert)
+Viewer question or request awaiting response generates alert. ... INFO  [alembic.runtime.migration] Context impl 
+SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 0001_baseline, baseline schema
+INFO  [alembic.runtime.migration] Running upgrade 0001_baseline -> 0002_post_tags, create post_tags table
+INFO  [alembic.runtime.migration] Running upgrade 0002_post_tags -> 0003_comments_and_audience, add is_own_account to 
+comments and create comment_labels table
+INFO  [alembic.runtime.migration] Running upgrade 0003_comments_and_audience -> 0004_recommendations, create 
+recommendation_sets, recommendations, and post_feedback tables
+INFO  [alembic.runtime.migration] Running upgrade 0004_recommendations -> 0005_reports_and_alerts, create alerts and 
+weekly_reports tables
+ok
+test_pace_flag_alerts_require_5_posts (test_insight_alerts.AlertsEngineTests.test_pace_flag_alerts_require_5_posts)
+Pace alerts (taking off / slow start) require >=5 posts with usable 7d views. ... INFO  [alembic.runtime.migration] 
+Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 0001_baseline, baseline schema
+INFO  [alembic.runtime.migration] Running upgrade 0001_baseline -> 0002_post_tags, create post_tags table
+INFO  [alembic.runtime.migration] Running upgrade 0002_post_tags -> 0003_comments_and_audience, add is_own_account to 
+comments and create comment_labels table
+INFO  [alembic.runtime.migration] Running upgrade 0003_comments_and_audience -> 0004_recommendations, create 
+recommendation_sets, recommendations, and post_feedback tables
+INFO  [alembic.runtime.migration] Running upgrade 0004_recommendations -> 0005_reports_and_alerts, create alerts and 
+weekly_reports tables
+ok
+test_recommendation_alerts (test_insight_alerts.AlertsEngineTests.test_recommendation_alerts)
+Weekly recommendations ready and recommendation outcome alerts. ... INFO  [alembic.runtime.migration] Context impl 
+SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 0001_baseline, baseline schema
+INFO  [alembic.runtime.migration] Running upgrade 0001_baseline -> 0002_post_tags, create post_tags table
+INFO  [alembic.runtime.migration] Running upgrade 0002_post_tags -> 0003_comments_and_audience, add is_own_account to 
+comments and create comment_labels table
+INFO  [alembic.runtime.migration] Running upgrade 0003_comments_and_audience -> 0004_recommendations, create 
+recommendation_sets, recommendations, and post_feedback tables
+INFO  [alembic.runtime.migration] Running upgrade 0004_recommendations -> 0005_reports_and_alerts, create alerts and 
+weekly_reports tables
+ok
+test_token_expiry_missing (test_insight_alerts.AlertsEngineTests.test_token_expiry_missing)
+When META_TOKEN_EXPIRES_AT is missing, raise warning alert. ... INFO  [alembic.runtime.migration] Context impl 
+SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 0001_baseline, baseline schema
+INFO  [alembic.runtime.migration] Running upgrade 0001_baseline -> 0002_post_tags, create post_tags table
+INFO  [alembic.runtime.migration] Running upgrade 0002_post_tags -> 0003_comments_and_audience, add is_own_account to 
+comments and create comment_labels table
+INFO  [alembic.runtime.migration] Running upgrade 0003_comments_and_audience -> 0004_recommendations, create 
+recommendation_sets, recommendations, and post_feedback tables
+INFO  [alembic.runtime.migration] Running upgrade 0004_recommendations -> 0005_reports_and_alerts, create alerts and 
+weekly_reports tables
+ok
+test_token_expiry_stages_and_auto_resolve 
+(test_insight_alerts.AlertsEngineTests.test_token_expiry_stages_and_auto_resolve)
+Test token expiry stages (<14d, <3d, expired) and auto-resolve (>14d). ... INFO  [alembic.runtime.migration] Context 
+impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 0001_baseline, baseline schema
+INFO  [alembic.runtime.migration] Running upgrade 0001_baseline -> 0002_post_tags, create post_tags table
+INFO  [alembic.runtime.migration] Running upgrade 0002_post_tags -> 0003_comments_and_audience, add is_own_account to 
+comments and create comment_labels table
+INFO  [alembic.runtime.migration] Running upgrade 0003_comments_and_audience -> 0004_recommendations, create 
+recommendation_sets, recommendations, and post_feedback tables
+INFO  [alembic.runtime.migration] Running upgrade 0004_recommendations -> 0005_reports_and_alerts, create alerts and 
+weekly_reports tables
+ok
+test_collector_failing_3_consecutive_runs 
+(test_insight_alerts.ViewTimeSystemAlertsTests.test_collector_failing_3_consecutive_runs)
+When 3 consecutive runs in collect.log are failed, raise collector_failing critical alert. ... ok
+test_collector_not_running_24h (test_insight_alerts.ViewTimeSystemAlertsTests.test_collector_not_running_24h)
+When last successful run was >=24h ago, raise collector_not_running critical alert. ... ok
+test_classify_performance (test_insight_analysis.AnalysisMathTests.test_classify_performance) ... ok
+test_compute_baseline (test_insight_analysis.AnalysisMathTests.test_compute_baseline) ... ok
+test_confidence_tiers (test_insight_analysis.AnalysisMathTests.test_confidence_tiers) ... ok
+test_dimension_helpers (test_insight_analysis.AnalysisMathTests.test_dimension_helpers) ... ok
+test_early_pace_flags (test_insight_analysis.AnalysisMathTests.test_early_pace_flags) ... ok
+test_group_comparison_suppression (test_insight_analysis.AnalysisMathTests.test_group_comparison_suppression) ... ok
+test_growth_association (test_insight_analysis.AnalysisMathTests.test_growth_association) ... ok
+test_percentile_and_median (test_insight_analysis.AnalysisMathTests.test_percentile_and_median) ... ok
+test_collector_continues_if_tagging_fails 
+(test_insight_analysis.CollectorTaggingResilienceTests.test_collector_continues_if_tagging_fails)
+If AI tagging raises an exception, collection finishes successfully without failing. ... INFO  
+[alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 0001_baseline, baseline schema
+INFO  [alembic.runtime.migration] Running upgrade 0001_baseline -> 0002_post_tags, create post_tags table
+INFO  [alembic.runtime.migration] Running upgrade 0002_post_tags -> 0003_comments_and_audience, add is_own_account to 
+comments and create comment_labels table
+INFO  [alembic.runtime.migration] Running upgrade 0003_comments_and_audience -> 0004_recommendations, create 
+recommendation_sets, recommendations, and post_feedback tables
+INFO  [alembic.runtime.migration] Running upgrade 0004_recommendations -> 0005_reports_and_alerts, create alerts and 
+weekly_reports tables
+[settings] WORKFLOW_STATE <- unset
+[settings] META_TOKEN_EXPIRES_AT <- unset
+INFO  [alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+WARNI [insight.tagging] [tagging] Error tagging publication reel_tag_fail: Gemini API connection error
+D:\Insta - AI Agent\IG_Agent\.venv\Lib\site-packages\google\api_core\_python_version_support.py:254: FutureWarning: 
+You are using a Python version (3.11.16) which Google will stop supporting in new releases of google.api_core once it 
+reaches its end of life (2027-10-24). Please upgrade to the latest Python version, or at least Python 3.12, to 
+continue receiving updates for google.api_core past that date.
+  warnings.warn(message, FutureWarning)
+D:\Insta - AI Agent\IG_Agent\.venv\Lib\site-packages\google\auth\transport\grpc.py:44: FutureWarning: grpcio < 1.83.0 
+does not support Post-Quantum Cryptography (PQC). Support for non-PQC environments is deprecated. In October 2026, 
+google-auth will raise its minimum requirements to enforce grpcio >= 1.83.0. For more details on Google Cloud's 
+post-quantum security migration, visit: https://cloud.google.com/security/resources/post-quantum-cryptography
+  warnings.warn(
+D:\Insta - AI Agent\wt-qc\insight\recommend.py:249: FutureWarning: 
+
+All support for the `google.generativeai` package has ended. It will no longer be receiving 
+updates or bug fixes. Please switch to the `google.genai` package as soon as possible.
+See README for more details:
+
+https://github.com/google-gemini/deprecated-generative-ai-python/blob/main/README.md
+
+  import google.generativeai as genai
+WARNI [insight.recommend] Gemini wording call failed: 400 API key not valid. Please pass a valid API key. [reason: 
+"API_KEY_INVALID"
+domain: "googleapis.com"
+metadata {
+  key: "service"
+  value: "generativelanguage.googleapis.com"
+}
+, locale: "en-US"
+message: "API key not valid. Please pass a valid API key."
+]
+WARNI [insight.recommend] Gemini wording call failed: 400 API key not valid. Please pass a valid API key. [reason: 
+"API_KEY_INVALID"
+domain: "googleapis.com"
+metadata {
+  key: "service"
+  value: "generativelanguage.googleapis.com"
+}
+, locale: "en-US"
+message: "API key not valid. Please pass a valid API key."
+]
+WARNI [insight.recommend] Gemini wording call failed: 400 API key not valid. Please pass a valid API key. [reason: 
+"API_KEY_INVALID"
+domain: "googleapis.com"
+metadata {
+  key: "service"
+  value: "generativelanguage.googleapis.com"
+}
+, locale: "en-US"
+message: "API key not valid. Please pass a valid API key."
+]
+WARNI [insight.recommend] Gemini wording call failed: 400 API key not valid. Please pass a valid API key. [reason: 
+"API_KEY_INVALID"
+domain: "googleapis.com"
+metadata {
+  key: "service"
+  value: "generativelanguage.googleapis.com"
+}
+, locale: "en-US"
+message: "API key not valid. Please pass a valid API key."
+]
+[collect] Alerts active (2):
+[collect]   - [CRITICAL] Meta access token expired: The Meta access token expired on Nov 03, 2026 at 5:30 PM IST. Metric collection cannot reach Instagram until a new token is pasted.
+[collect]   - [INFO] New recommendations ready for 2026-W47: Generated 4 actionable content recommendation(s) for 2026-W47 in EXPLORATION mode (Nov 21, 2026 at 12:18 AM IST).
+[collect] OK: synced=1 tagged=0 comments=0 labelled=0 snap_new=3 snap_unavail=4 errors=0 calls=5/20 elapsed=2.18s
+ok
+test_upgrade_creates_post_tags (test_insight_analysis.Migration0002Tests.test_upgrade_creates_post_tags) ... INFO  
+[alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 0001_baseline, baseline schema
+INFO  [alembic.runtime.migration] Running upgrade 0001_baseline -> 0002_post_tags, create post_tags table
+INFO  [alembic.runtime.migration] Running upgrade 0002_post_tags -> 0003_comments_and_audience, add is_own_account to 
+comments and create comment_labels table
+INFO  [alembic.runtime.migration] Running upgrade 0003_comments_and_audience -> 0004_recommendations, create 
+recommendation_sets, recommendations, and post_feedback tables
+INFO  [alembic.runtime.migration] Running upgrade 0004_recommendations -> 0005_reports_and_alerts, create alerts and 
+weekly_reports tables
+INFO  [alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.runtime.plugins] setting up autogenerate plugin alembic.autogenerate.schemas
+INFO  [alembic.runtime.plugins] setting up autogenerate plugin alembic.autogenerate.tables
+INFO  [alembic.runtime.plugins] setting up autogenerate plugin alembic.autogenerate.types
+INFO  [alembic.runtime.plugins] setting up autogenerate plugin alembic.autogenerate.constraints
+INFO  [alembic.runtime.plugins] setting up autogenerate plugin alembic.autogenerate.defaults
+INFO  [alembic.runtime.plugins] setting up autogenerate plugin alembic.autogenerate.comments
+ok
+test_render_performance_tab_not_enough_data 
+(test_insight_analysis.StreamlitPerformanceTabRenderTests.test_render_performance_tab_not_enough_data)
+Render against a DB with only 2 publications: shows 'Not Enough Data' banner. ... INFO  [alembic.runtime.migration] 
+Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 0001_baseline, baseline schema
+INFO  [alembic.runtime.migration] Running upgrade 0001_baseline -> 0002_post_tags, create post_tags table
+INFO  [alembic.runtime.migration] Running upgrade 0002_post_tags -> 0003_comments_and_audience, add is_own_account to 
+comments and create comment_labels table
+INFO  [alembic.runtime.migration] Running upgrade 0003_comments_and_audience -> 0004_recommendations, create 
+recommendation_sets, recommendations, and post_feedback tables
+INFO  [alembic.runtime.migration] Running upgrade 0004_recommendations -> 0005_reports_and_alerts, create alerts and 
+weekly_reports tables
+D:\Insta - AI Agent\IG_Agent\.venv\Lib\site-packages\streamlit\util.py:227: RuntimeWarning: coroutine 'expire_cache' 
+was never awaited
+  pass
+RuntimeWarning: Enable tracemalloc to get the object allocation traceback
+D:\Insta - AI Agent\IG_Agent\.venv\Lib\site-packages\streamlit\util.py:227: RuntimeWarning: coroutine 'expire_cache' 
+was never awaited
+  pass
+RuntimeWarning: Enable tracemalloc to get the object allocation traceback
+ok
+test_classify_caption_invalid_taxonomy_becomes_unknown 
+(test_insight_analysis.TaggingTests.test_classify_caption_invalid_taxonomy_becomes_unknown) ... ok
+test_classify_caption_valid (test_insight_analysis.TaggingTests.test_classify_caption_valid) ... ok
+test_hash_input (test_insight_analysis.TaggingTests.test_hash_input) ... ok
+test_load_taxonomy (test_insight_analysis.TaggingTests.test_load_taxonomy) ... ok
+test_tag_publication_and_retag_rules (test_insight_analysis.TaggingTests.test_tag_publication_and_retag_rules) ... 
+INFO  [alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 0001_baseline, baseline schema
+INFO  [alembic.runtime.migration] Running upgrade 0001_baseline -> 0002_post_tags, create post_tags table
+INFO  [alembic.runtime.migration] Running upgrade 0002_post_tags -> 0003_comments_and_audience, add is_own_account to 
+comments and create comment_labels table
+INFO  [alembic.runtime.migration] Running upgrade 0003_comments_and_audience -> 0004_recommendations, create 
+recommendation_sets, recommendations, and post_feedback tables
+INFO  [alembic.runtime.migration] Running upgrade 0004_recommendations -> 0005_reports_and_alerts, create alerts and 
+weekly_reports tables
+ok
+test_content_ideas_2_author_threshold_and_ranking 
+(test_insight_audience.AudienceIntelligenceLogicTests.test_content_ideas_2_author_threshold_and_ranking)
+Themes with >=2 distinct authors become content ideas; single-author themes become single mentions. ... INFO  
+[alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 0001_baseline, baseline schema
+INFO  [alembic.runtime.migration] Running upgrade 0001_baseline -> 0002_post_tags, create post_tags table
+INFO  [alembic.runtime.migration] Running upgrade 0002_post_tags -> 0003_comments_and_audience, add is_own_account to 
+comments and create comment_labels table
+INFO  [alembic.runtime.migration] Running upgrade 0003_comments_and_audience -> 0004_recommendations, create 
+recommendation_sets, recommendations, and post_feedback tables
+INFO  [alembic.runtime.migration] Running upgrade 0004_recommendations -> 0005_reports_and_alerts, create alerts and 
+weekly_reports tables
+ok
+test_needs_reply_queue_clears_when_own_reply_exists 
+(test_insight_audience.AudienceIntelligenceLogicTests.test_needs_reply_queue_clears_when_own_reply_exists)
+c5 is marked needs_reply=True, but has own reply c6, so c5 MUST be excluded from queue. ... INFO  
+[alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 0001_baseline, baseline schema
+INFO  [alembic.runtime.migration] Running upgrade 0001_baseline -> 0002_post_tags, create post_tags table
+INFO  [alembic.runtime.migration] Running upgrade 0002_post_tags -> 0003_comments_and_audience, add is_own_account to 
+comments and create comment_labels table
+INFO  [alembic.runtime.migration] Running upgrade 0003_comments_and_audience -> 0004_recommendations, create 
+recommendation_sets, recommendations, and post_feedback tables
+INFO  [alembic.runtime.migration] Running upgrade 0004_recommendations -> 0005_reports_and_alerts, create alerts and 
+weekly_reports tables
+ok
+test_reply_under_old_comment_collected 
+(test_insight_audience.AudienceIntelligenceLogicTests.test_reply_under_old_comment_collected)
+A new reply arriving under an old comment is properly upserted and linked. ... INFO  [alembic.runtime.migration] 
+Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 0001_baseline, baseline schema
+INFO  [alembic.runtime.migration] Running upgrade 0001_baseline -> 0002_post_tags, create post_tags table
+INFO  [alembic.runtime.migration] Running upgrade 0002_post_tags -> 0003_comments_and_audience, add is_own_account to 
+comments and create comment_labels table
+INFO  [alembic.runtime.migration] Running upgrade 0003_comments_and_audience -> 0004_recommendations, create 
+recommendation_sets, recommendations, and post_feedback tables
+INFO  [alembic.runtime.migration] Running upgrade 0004_recommendations -> 0005_reports_and_alerts, create alerts and 
+weekly_reports tables
+ok
+test_sentiment_breakdown_excludes_unknown_and_own_account 
+(test_insight_audience.AudienceIntelligenceLogicTests.test_sentiment_breakdown_excludes_unknown_and_own_account) ... 
+INFO  [alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 0001_baseline, baseline schema
+INFO  [alembic.runtime.migration] Running upgrade 0001_baseline -> 0002_post_tags, create post_tags table
+INFO  [alembic.runtime.migration] Running upgrade 0002_post_tags -> 0003_comments_and_audience, add is_own_account to 
+comments and create comment_labels table
+INFO  [alembic.runtime.migration] Running upgrade 0003_comments_and_audience -> 0004_recommendations, create 
+recommendation_sets, recommendations, and post_feedback tables
+INFO  [alembic.runtime.migration] Running upgrade 0004_recommendations -> 0005_reports_and_alerts, create alerts and 
+weekly_reports tables
+ok
+test_taxonomy_fallbacks_unknown_and_other 
+(test_insight_audience.AudienceTaxonomyTests.test_taxonomy_fallbacks_unknown_and_other)
+Values outside taxonomy fallback to unknown (sentiment) and other (category). ... ok
+test_taxonomy_seed_loaded (test_insight_audience.AudienceTaxonomyTests.test_taxonomy_seed_loaded) ... ok
+test_fetch_comments_pagination_and_replies 
+(test_insight_audience.InstagramCommentsAdapterTests.test_fetch_comments_pagination_and_replies)
+Paginates top-level comments and nested replies, detecting own account. ... ok
+test_missing_fields_tolerated (test_insight_audience.InstagramCommentsAdapterTests.test_missing_fields_tolerated)
+Adapter handles comments with missing username, replies, like_count without crashing. ... ok
+test_redact_user_identifiers_helper 
+(test_insight_audience.PrivacyAndRedactionTests.test_redact_user_identifiers_helper) ... INFO  
+[alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 0001_baseline, baseline schema
+INFO  [alembic.runtime.migration] Running upgrade 0001_baseline -> 0002_post_tags, create post_tags table
+INFO  [alembic.runtime.migration] Running upgrade 0002_post_tags -> 0003_comments_and_audience, add is_own_account to 
+comments and create comment_labels table
+INFO  [alembic.runtime.migration] Running upgrade 0003_comments_and_audience -> 0004_recommendations, create 
+recommendation_sets, recommendations, and post_feedback tables
+INFO  [alembic.runtime.migration] Running upgrade 0004_recommendations -> 0005_reports_and_alerts, create alerts and 
+weekly_reports tables
+ok
+test_zero_raw_usernames_in_sqlite (test_insight_audience.PrivacyAndRedactionTests.test_zero_raw_usernames_in_sqlite)
+Querying every table in SQLite for a test username yields 0 rows. ... INFO  [alembic.runtime.migration] Context impl 
+SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 0001_baseline, baseline schema
+INFO  [alembic.runtime.migration] Running upgrade 0001_baseline -> 0002_post_tags, create post_tags table
+INFO  [alembic.runtime.migration] Running upgrade 0002_post_tags -> 0003_comments_and_audience, add is_own_account to 
+comments and create comment_labels table
+INFO  [alembic.runtime.migration] Running upgrade 0003_comments_and_audience -> 0004_recommendations, create 
+recommendation_sets, recommendations, and post_feedback tables
+INFO  [alembic.runtime.migration] Running upgrade 0004_recommendations -> 0005_reports_and_alerts, create alerts and 
+weekly_reports tables
+ok
+test_streamlit_audience_tab_renders_no_exception 
+(test_insight_audience.StreamlitAudienceTabTests.test_streamlit_audience_tab_renders_no_exception)
+AppTest renders the entire Streamlit app including 5 tabs with no exceptions. ... INFO  [alembic.runtime.migration] 
+Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 0001_baseline, baseline schema
+INFO  [alembic.runtime.migration] Running upgrade 0001_baseline -> 0002_post_tags, create post_tags table
+INFO  [alembic.runtime.migration] Running upgrade 0002_post_tags -> 0003_comments_and_audience, add is_own_account to 
+comments and create comment_labels table
+INFO  [alembic.runtime.migration] Running upgrade 0003_comments_and_audience -> 0004_recommendations, create 
+recommendation_sets, recommendations, and post_feedback tables
+INFO  [alembic.runtime.migration] Running upgrade 0004_recommendations -> 0005_reports_and_alerts, create alerts and 
+weekly_reports tables
+ok
+test_fetch_account_metrics_excludes_followers 
+(test_insight_collector.AdapterTests.test_fetch_account_metrics_excludes_followers)
+Daily account metrics return day-bounded metrics and omit followers. ... ok
+test_pagination_follows_next (test_insight_collector.AdapterTests.test_pagination_follows_next) ... ok
+test_alembic_upgrade_fresh_db (test_insight_collector.AlembicTests.test_alembic_upgrade_fresh_db)
+upgrade_db() creates all 7 models tables + alembic_version on a blank database. ... INFO  [alembic.runtime.migration] 
+Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 0001_baseline, baseline schema
+INFO  [alembic.runtime.migration] Running upgrade 0001_baseline -> 0002_post_tags, create post_tags table
+INFO  [alembic.runtime.migration] Running upgrade 0002_post_tags -> 0003_comments_and_audience, add is_own_account to 
+comments and create comment_labels table
+INFO  [alembic.runtime.migration] Running upgrade 0003_comments_and_audience -> 0004_recommendations, create 
+recommendation_sets, recommendations, and post_feedback tables
+INFO  [alembic.runtime.migration] Running upgrade 0004_recommendations -> 0005_reports_and_alerts, create alerts and 
+weekly_reports tables
+ok
+test_autogenerate_produces_no_changes (test_insight_collector.AlembicTests.test_autogenerate_produces_no_changes)
+Autogenerate against models after 'upgrade head' produces no schema diffs. ... INFO  [alembic.runtime.migration] 
+Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 0001_baseline, baseline schema
+INFO  [alembic.runtime.migration] Running upgrade 0001_baseline -> 0002_post_tags, create post_tags table
+INFO  [alembic.runtime.migration] Running upgrade 0002_post_tags -> 0003_comments_and_audience, add is_own_account to 
+comments and create comment_labels table
+INFO  [alembic.runtime.migration] Running upgrade 0003_comments_and_audience -> 0004_recommendations, create 
+recommendation_sets, recommendations, and post_feedback tables
+INFO  [alembic.runtime.migration] Running upgrade 0004_recommendations -> 0005_reports_and_alerts, create alerts and 
+weekly_reports tables
+INFO  [alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.runtime.plugins] setting up autogenerate plugin alembic.autogenerate.schemas
+INFO  [alembic.runtime.plugins] setting up autogenerate plugin alembic.autogenerate.tables
+INFO  [alembic.runtime.plugins] setting up autogenerate plugin alembic.autogenerate.types
+INFO  [alembic.runtime.plugins] setting up autogenerate plugin alembic.autogenerate.constraints
+INFO  [alembic.runtime.plugins] setting up autogenerate plugin alembic.autogenerate.defaults
+INFO  [alembic.runtime.plugins] setting up autogenerate plugin alembic.autogenerate.comments
+ok
+test_catchup_days_never_get_followers 
+(test_insight_collector.CollectorIntegrationTests.test_catchup_days_never_get_followers)
+When multiple missed daily snapshots are caught up, NONE receive followers. ... INFO  [alembic.runtime.migration] 
+Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 0001_baseline, baseline schema
+INFO  [alembic.runtime.migration] Running upgrade 0001_baseline -> 0002_post_tags, create post_tags table
+INFO  [alembic.runtime.migration] Running upgrade 0002_post_tags -> 0003_comments_and_audience, add is_own_account to 
+comments and create comment_labels table
+INFO  [alembic.runtime.migration] Running upgrade 0003_comments_and_audience -> 0004_recommendations, create 
+recommendation_sets, recommendations, and post_feedback tables
+INFO  [alembic.runtime.migration] Running upgrade 0004_recommendations -> 0005_reports_and_alerts, create alerts and 
+weekly_reports tables
+INFO  [alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+[settings] GEMINI_MODEL <- unset
+[collect] Alerts active (1):
+[collect]   - [INFO] New recommendations ready for 2026-W41: Generated 4 actionable content recommendation(s) for 2026-W41 in EXPLORATION mode (Oct 05, 2026 at 5:30 PM IST).
+[collect] OK: synced=0 tagged=0 comments=0 labelled=0 snap_new=4 snap_unavail=0 errors=0 calls=6/50 elapsed=0.12s
+ok
+test_checkpoint_and_catchup_collection 
+(test_insight_collector.CollectorIntegrationTests.test_checkpoint_and_catchup_collection) ... INFO  
+[alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 0001_baseline, baseline schema
+INFO  [alembic.runtime.migration] Running upgrade 0001_baseline -> 0002_post_tags, create post_tags table
+INFO  [alembic.runtime.migration] Running upgrade 0002_post_tags -> 0003_comments_and_audience, add is_own_account to 
+comments and create comment_labels table
+INFO  [alembic.runtime.migration] Running upgrade 0003_comments_and_audience -> 0004_recommendations, create 
+recommendation_sets, recommendations, and post_feedback tables
+INFO  [alembic.runtime.migration] Running upgrade 0004_recommendations -> 0005_reports_and_alerts, create alerts and 
+weekly_reports tables
+INFO  [alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+WARNI [insight.tagging] [tagging] Error tagging publication reel_101: Missing GEMINI_API_KEY for AI tagging
+[collect] Alerts active (1):
+[collect]   - [INFO] New recommendations ready for 2026-W40: Generated 4 actionable content recommendation(s) for 2026-W40 in EXPLORATION mode (Oct 02, 2026 at 5:30 PM IST).
+[collect] OK: synced=1 tagged=0 comments=0 labelled=0 snap_new=4 snap_unavail=0 errors=0 calls=7/50 elapsed=0.06s
+ok
+test_daily_account_catchup_rule_bounds 
+(test_insight_collector.CollectorIntegrationTests.test_daily_account_catchup_rule_bounds)
+Verify start_bound is later of connected_at, earliest_pub, and today - 729. ... INFO  [alembic.runtime.migration] 
+Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 0001_baseline, baseline schema
+INFO  [alembic.runtime.migration] Running upgrade 0001_baseline -> 0002_post_tags, create post_tags table
+INFO  [alembic.runtime.migration] Running upgrade 0002_post_tags -> 0003_comments_and_audience, add is_own_account to 
+comments and create comment_labels table
+INFO  [alembic.runtime.migration] Running upgrade 0003_comments_and_audience -> 0004_recommendations, create 
+recommendation_sets, recommendations, and post_feedback tables
+INFO  [alembic.runtime.migration] Running upgrade 0004_recommendations -> 0005_reports_and_alerts, create alerts and 
+weekly_reports tables
+INFO  [alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+WARNI [insight.tagging] [tagging] Error tagging publication reel_very_old: Missing GEMINI_API_KEY for AI tagging
+[collect] Alerts active (1):
+[collect]   - [INFO] New recommendations ready for 2026-W40: Generated 4 actionable content recommendation(s) for 2026-W40 in EXPLORATION mode (Oct 02, 2026 at 5:30 PM IST).
+[collect] OK: synced=1 tagged=0 comments=0 labelled=0 snap_new=3 snap_unavail=4 errors=0 calls=5/5 elapsed=0.17s
+ok
+test_dry_run_writes_nothing (test_insight_collector.CollectorIntegrationTests.test_dry_run_writes_nothing) ... INFO  
+[alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 0001_baseline, baseline schema
+INFO  [alembic.runtime.migration] Running upgrade 0001_baseline -> 0002_post_tags, create post_tags table
+INFO  [alembic.runtime.migration] Running upgrade 0002_post_tags -> 0003_comments_and_audience, add is_own_account to 
+comments and create comment_labels table
+INFO  [alembic.runtime.migration] Running upgrade 0003_comments_and_audience -> 0004_recommendations, create 
+recommendation_sets, recommendations, and post_feedback tables
+INFO  [alembic.runtime.migration] Running upgrade 0004_recommendations -> 0005_reports_and_alerts, create alerts and 
+weekly_reports tables
+[collect] DRY-RUN mode: rolled back all changes.
+[collect] OK: synced=0 tagged=0 comments=0 labelled=0 snap_new=2 snap_unavail=0 errors=0 calls=4/50 elapsed=0.02s
+ok
+test_first_run_old_post_respects_call_cap_and_resumes 
+(test_insight_collector.CollectorIntegrationTests.test_first_run_old_post_respects_call_cap_and_resumes)
+Account with a 2-year-old post catches up daily snapshots within call cap, then resumes on next run. ... INFO  
+[alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 0001_baseline, baseline schema
+INFO  [alembic.runtime.migration] Running upgrade 0001_baseline -> 0002_post_tags, create post_tags table
+INFO  [alembic.runtime.migration] Running upgrade 0002_post_tags -> 0003_comments_and_audience, add is_own_account to 
+comments and create comment_labels table
+INFO  [alembic.runtime.migration] Running upgrade 0003_comments_and_audience -> 0004_recommendations, create 
+recommendation_sets, recommendations, and post_feedback tables
+INFO  [alembic.runtime.migration] Running upgrade 0004_recommendations -> 0005_reports_and_alerts, create alerts and 
+weekly_reports tables
+INFO  [alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+WARNI [insight.tagging] [tagging] Error tagging publication reel_old: Missing GEMINI_API_KEY for AI tagging
+[collect] Alerts active (1):
+[collect]   - [INFO] New recommendations ready for 2026-W40: Generated 4 actionable content recommendation(s) for 2026-W40 in EXPLORATION mode (Oct 02, 2026 at 5:30 PM IST).
+[collect] OK: synced=1 tagged=0 comments=0 labelled=0 snap_new=8 snap_unavail=4 errors=0 calls=10/10 elapsed=0.07s
+INFO  [alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+WARNI [insight.tagging] [tagging] Error tagging publication reel_old: Missing GEMINI_API_KEY for AI tagging
+[collect] Alerts active (1):
+[collect]   - [INFO] New recommendations ready for 2026-W40: Generated 4 actionable content recommendation(s) for 2026-W40 in EXPLORATION mode (Oct 02, 2026 at 5:30 PM IST).
+[collect] OK: synced=1 tagged=0 comments=0 labelled=0 snap_new=8 snap_unavail=0 errors=0 calls=10/10 elapsed=0.05s
+ok
+test_idempotency_second_run_writes_nothing 
+(test_insight_collector.CollectorIntegrationTests.test_idempotency_second_run_writes_nothing) ... INFO  
+[alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 0001_baseline, baseline schema
+INFO  [alembic.runtime.migration] Running upgrade 0001_baseline -> 0002_post_tags, create post_tags table
+INFO  [alembic.runtime.migration] Running upgrade 0002_post_tags -> 0003_comments_and_audience, add is_own_account to 
+comments and create comment_labels table
+INFO  [alembic.runtime.migration] Running upgrade 0003_comments_and_audience -> 0004_recommendations, create 
+recommendation_sets, recommendations, and post_feedback tables
+INFO  [alembic.runtime.migration] Running upgrade 0004_recommendations -> 0005_reports_and_alerts, create alerts and 
+weekly_reports tables
+INFO  [alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+WARNI [insight.tagging] [tagging] Error tagging publication reel_202: Missing GEMINI_API_KEY for AI tagging
+[collect] Alerts active (1):
+[collect]   - [INFO] New recommendations ready for 2026-W40: Generated 4 actionable content recommendation(s) for 2026-W40 in EXPLORATION mode (Oct 02, 2026 at 5:30 PM IST).
+[collect] OK: synced=1 tagged=0 comments=0 labelled=0 snap_new=2 snap_unavail=0 errors=0 calls=5/50 elapsed=0.06s
+INFO  [alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+WARNI [insight.tagging] [tagging] Error tagging publication reel_202: Missing GEMINI_API_KEY for AI tagging
+[collect] Alerts active (1):
+[collect]   - [INFO] New recommendations ready for 2026-W40: Generated 4 actionable content recommendation(s) for 2026-W40 in EXPLORATION mode (Oct 02, 2026 at 5:30 PM IST).
+[collect] OK: synced=1 tagged=0 comments=0 labelled=0 snap_new=0 snap_unavail=0 errors=0 calls=3/50 elapsed=0.03s
+ok
+test_lock_file_and_stale_lock (test_insight_collector.CollectorIntegrationTests.test_lock_file_and_stale_lock) ... 
+INFO  [alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 0001_baseline, baseline schema
+INFO  [alembic.runtime.migration] Running upgrade 0001_baseline -> 0002_post_tags, create post_tags table
+INFO  [alembic.runtime.migration] Running upgrade 0002_post_tags -> 0003_comments_and_audience, add is_own_account to 
+comments and create comment_labels table
+INFO  [alembic.runtime.migration] Running upgrade 0003_comments_and_audience -> 0004_recommendations, create 
+recommendation_sets, recommendations, and post_feedback tables
+INFO  [alembic.runtime.migration] Running upgrade 0004_recommendations -> 0005_reports_and_alerts, create alerts and 
+weekly_reports tables
+[collect] Found stale lock (age 1800s > 1500s). Clearing.
+ok
+test_summary_logged_and_printed_exactly_once_on_repeated_runs 
+(test_insight_collector.CollectorIntegrationTests.test_summary_logged_and_printed_exactly_once_on_repeated_runs)
+Collector summary line prints to stdout and logs to file exactly once per run on repeated runs. ... INFO  
+[alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 0001_baseline, baseline schema
+INFO  [alembic.runtime.migration] Running upgrade 0001_baseline -> 0002_post_tags, create post_tags table
+INFO  [alembic.runtime.migration] Running upgrade 0002_post_tags -> 0003_comments_and_audience, add is_own_account to 
+comments and create comment_labels table
+INFO  [alembic.runtime.migration] Running upgrade 0003_comments_and_audience -> 0004_recommendations, create 
+recommendation_sets, recommendations, and post_feedback tables
+INFO  [alembic.runtime.migration] Running upgrade 0004_recommendations -> 0005_reports_and_alerts, create alerts and 
+weekly_reports tables
+INFO  [alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+ok
+test_usage_header_stops_early (test_insight_collector.CollectorIntegrationTests.test_usage_header_stops_early) ... 
+INFO  [alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 0001_baseline, baseline schema
+INFO  [alembic.runtime.migration] Running upgrade 0001_baseline -> 0002_post_tags, create post_tags table
+INFO  [alembic.runtime.migration] Running upgrade 0002_post_tags -> 0003_comments_and_audience, add is_own_account to 
+comments and create comment_labels table
+INFO  [alembic.runtime.migration] Running upgrade 0003_comments_and_audience -> 0004_recommendations, create 
+recommendation_sets, recommendations, and post_feedback tables
+INFO  [alembic.runtime.migration] Running upgrade 0004_recommendations -> 0005_reports_and_alerts, create alerts and 
+weekly_reports tables
+INFO  [alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+WARNI [insight.http_client] Meta X-App-Usage exceeded 80%: call_count=85%
+WARNI [insight.http_client] Meta X-App-Usage exceeded 80%: total_time=85%
+WARNI [insight.adapters.instagram] Usage throttled >80%; stopping publication pagination
+[collect] Alerts active (2):
+[collect]   - [CRITICAL] Meta access token expired: The Meta access token expired on Nov 03, 2026 at 5:30 PM IST. Metric collection cannot reach Instagram until a new token is pasted.
+[collect]   - [INFO] New recommendations ready for 2026-W47: Generated 4 actionable content recommendation(s) for 2026-W47 in EXPLORATION mode (Nov 21, 2026 at 12:19 AM IST).
+[collect] OK: synced=0 tagged=0 comments=0 labelled=0 snap_new=0 snap_unavail=0 errors=0 calls=2/50 elapsed=0.05s
+ok
+test_media_type_mapping_with_probe_shape 
+(test_insight_collector.MediaTypeMappingTests.test_media_type_mapping_with_probe_shape)
+Test is_reel with exact payload shapes returned by the Instagram probe. ... ok
+test_all_done (test_insight_logic.CheckpointTests.test_all_done) ... ok
+test_before_first_checkpoint_nothing_due (test_insight_logic.CheckpointTests.test_before_first_checkpoint_nothing_due) 
+... ok
+test_due_within_grace (test_insight_logic.CheckpointTests.test_due_within_grace) ... ok
+test_grace_window (test_insight_logic.CheckpointTests.test_grace_window) ... ok
+test_last_checkpoint_missed_is_still_collectable 
+(test_insight_logic.CheckpointTests.test_last_checkpoint_missed_is_still_collectable) ... ok
+test_missed_but_recoverable_is_collected_late 
+(test_insight_logic.CheckpointTests.test_missed_but_recoverable_is_collected_late) ... ok
+test_naive_now_rejected (test_insight_logic.CheckpointTests.test_naive_now_rejected) ... ok
+test_pc_off_for_three_days (test_insight_logic.CheckpointTests.test_pc_off_for_three_days) ... ok
+test_comments_hashed_no_usernames (test_insight_logic.FixtureTests.test_comments_hashed_no_usernames) ... ok
+test_dataset_shape (test_insight_logic.FixtureTests.test_dataset_shape) ... ok
+test_deterministic (test_insight_logic.FixtureTests.test_deterministic) ... ok
+test_loaded_counts_and_checkpoints (test_insight_logic.FixtureTests.test_loaded_counts_and_checkpoints) ... ok
+test_metrics_grow_over_checkpoints (test_insight_logic.FixtureTests.test_metrics_grow_over_checkpoints) ... ok
+test_refuses_real_db (test_insight_logic.FixtureTests.test_refuses_real_db) ... ok
+test_reload_is_idempotent (test_insight_logic.FixtureTests.test_reload_is_idempotent) ... ok
+test_special_cases_present (test_insight_logic.FixtureTests.test_special_cases_present) ... ok
+test_deterministic_and_normalized (test_insight_logic.HashingTests.test_deterministic_and_normalized) ... ok
+test_hash_does_not_contain_username (test_insight_logic.HashingTests.test_hash_does_not_contain_username) ... ok
+test_missing_salt_raises (test_insight_logic.HashingTests.test_missing_salt_raises) ... ok
+test_reads_salt_from_env (test_insight_logic.HashingTests.test_reads_salt_from_env) ... ok
+test_salt_changes_hash (test_insight_logic.HashingTests.test_salt_changes_hash) ... ok
+test_insight_does_not_import_pipeline_modules 
+(test_insight_logic.IsolationTests.test_insight_does_not_import_pipeline_modules) ... ok
+test_account_metrics (test_insight_logic.MappingTests.test_account_metrics) ... ok
+test_fake_adapter_records_missing_and_strips_token 
+(test_insight_logic.MappingTests.test_fake_adapter_records_missing_and_strips_token) ... ok
+test_full_mapping_with_scale (test_insight_logic.MappingTests.test_full_mapping_with_scale) ... ok
+test_missing_null_and_non_numeric_are_missing_not_guessed 
+(test_insight_logic.MappingTests.test_missing_null_and_non_numeric_are_missing_not_guessed) ... ok
+test_redact_secrets (test_insight_logic.MappingTests.test_redact_secrets) ... ok
+test_seed_covers_required_canonical_metrics 
+(test_insight_logic.MappingTests.test_seed_covers_required_canonical_metrics) ... ok
+test_unknown_platform_metric_is_unmapped (test_insight_logic.MappingTests.test_unknown_platform_metric_is_unmapped) 
+... ok
+test_youtube_todo_rows_are_not_used (test_insight_logic.MappingTests.test_youtube_todo_rows_are_not_used) ... ok
+test_cap_stops_at_limit (test_insight_probe.CallCapTests.test_cap_stops_at_limit) ... ok
+test_retries_count_toward_cap (test_insight_probe.CallCapTests.test_retries_count_toward_cap)
+Every HTTP attempt -- including retries -- counts toward the cap. ... ok
+test_batch_fail_triggers_single_fallback (test_insight_probe.FallbackTests.test_batch_fail_triggers_single_fallback) 
+... ok
+test_batch_success_skips_single_calls (test_insight_probe.FallbackTests.test_batch_success_skips_single_calls) ... ok
+test_single_call_invalid_records_error_msg 
+(test_insight_probe.FallbackTests.test_single_call_invalid_records_error_msg) ... ok
+test_followers_from_user_field (test_insight_probe.IntegrationTests.test_followers_from_user_field) ... ok
+[probe] Starting Instagram API probe...
+[probe] Account: @tester  followers=100  posts=5
+[probe] Media page: 2 items, 2 Reel(s)
+[probe] Reel batch failed ((#100) Param metric[0] must be one of ...); trying one-by-one...
+
+[probe] API calls used: 13/40
+
+canonical_name               platform_name                        applies_to status     sample_value    error
+-------------------------------------------------------------------------------------------------------------
+views                        views                                reel       OK         100             
+reach                        reach                                reel       OK         80              
+likes                        likes                                reel       OK         10              
+comments                     comments                             reel       OK         2               
+shares                       shares                               reel       OK         1               
+saves                        saved                                reel       OK         4               
+total_interactions           total_interactions                   reel       OK         17              
+avg_watch_time_seconds       ig_reels_avg_watch_time              reel       INVALID                    (#100) Invalid metric ig_reels_avg_watch_time
+total_watch_time_seconds     ig_reels_video_view_total_time       reel       INVALID                    (#100) Invalid metric ig_reels_video_view_total_time
+followers                    followers_count                      account    OK         100             
+profile_visits               profile_views                        account    OK         10              
+reach                        reach                                account    OK         50              
+views                        views                                account    OK         200             
+[probe] Starting Instagram API probe...
+[probe] Account: @tester  followers=100  posts=5
+[probe] Media page: 2 items, 2 Reel(s)
+
+[probe] API calls used: 4/40
+
+canonical_name               platform_name                        applies_to status     sample_value    error
+-------------------------------------------------------------------------------------------------------------
+views                        views                                reel       OK         500             
+reach                        reach                                reel       OK         300             
+likes                        likes                                reel       OK         20              
+comments                     comments                             reel       OK         5               
+shares                       shares                               reel       OK         3               
+saves                        saved                                reel       OK         7               
+total_interactions           total_interactions                   reel       OK         35              
+avg_watch_time_seconds       ig_reels_avg_watch_time              reel       OK         8000            
+total_watch_time_seconds     ig_reels_video_view_total_time       reel       OK         4000000         
+followers                    followers_count                      account    OK         100             
+profile_visits               profile_views                        account    OK         10              
+reach                        reach                                account    OK         50              
+views                        views                                account    OK         200             
+[probe] Starting Instagram API probe...
+[probe] Account: @tester  followers=100  posts=5
+[probe] Media page: 2 items, 2 Reel(s)
+[probe] Reel batch failed (batch fail); trying one-by-one...
+
+[probe] API calls used: 13/40
+
+canonical_name               platform_name                        applies_to status     sample_value    error
+-------------------------------------------------------------------------------------------------------------
+views                        views                                reel       INVALID                    (#100) 'views' not valid for this media type
+reach                        reach                                reel       OK         1               
+likes                        likes                                reel       OK         1               
+comments                     comments                             reel       OK         1               
+shares                       shares                               reel       OK         1               
+saves                        saved                                reel       OK         1               
+total_interactions           total_interactions                   reel       OK         1               
+avg_watch_time_seconds       ig_reels_avg_watch_time              reel       OK         1               
+total_watch_time_seconds     ig_reels_video_view_total_time       reel       OK         1               
+followers                    followers_count                      account    OK         100             
+profile_visits               profile_views                        account    OK         10              
+reach                        reach                                account    OK         50              
+views                        views                                account    OK         200             
+[probe] Starting Instagram API probe...
+[probe] Account: @t  followers=999  posts=0
+[probe] Media page: 0 items, 0 Reel(s)
+[probe] No Reels found on first page; skipping reel insights
+
+[probe] API calls used: 3/40
+[probe] Note: only 0 Reel(s) found (probed all available)
+
+canonical_name               platform_name                        applies_to status     sample_value    error
+-------------------------------------------------------------------------------------------------------------
+views                        views                                reel       NOT_TRIED                  no reels on account
+reach                        reach                                reel       NOT_TRIED                  no reels on account
+likes                        likes                                reel       NOT_TRIED                  no reels on account
+comments                     comments                             reel       NOT_TRIED                  no reels on account
+shares                       shares                               reel       NOT_TRIED                  no reels on account
+saves                        saved                                reel       NOT_TRIED                  no reels on account
+total_interactions           total_interactions                   reel       NOT_TRIED                  no reels on account
+avg_watch_time_seconds       ig_reels_avg_watch_time              reel       NOT_TRIED                  no reels on account
+total_watch_time_seconds     ig_reels_video_view_total_time       reel       NOT_TRIED                  no reels on account
+followers                    followers_count                      account    OK         999             
+profile_visits               profile_views                        account    OK         10              
+reach                        reach                                account    OK         50              
+views                        views                                account    OK         200             
+[probe] Starting Instagram API probe...
+[probe] Account: @tester  followers=100  posts=5
+[probe] Media page: 2 items, 1 Reel(s)
+
+[probe] API calls used: 4/40
+[probe] Note: only 1 Reel(s) found (probed all available)
+
+canonical_name               platform_name                        applies_to status     sample_value    error
+-------------------------------------------------------------------------------------------------------------
+test_one_reel_does_not_fail (test_insight_probe.IntegrationTests.test_one_reel_does_not_fail) ... ok
+test_zero_reels_does_not_fail (test_insight_probe.IntegrationTests.test_zero_reels_does_not_fail) ... ok
+test_4xx_not_retried (test_insight_probe.RetryTests.test_4xx_not_retried) ... ok
+test_5xx_retried_up_to_3_times (test_insight_probe.RetryTests.test_5xx_retried_up_to_3_times) ... ok
+test_5xx_then_success (test_insight_probe.RetryTests.test_5xx_then_success) ... ok
+test_timeout_retried_then_succeeds (test_insight_probe.RetryTests.test_timeout_retried_then_succeeds) ... ok
+test_paging_url_tokens_stripped (test_insight_probe.TokenTests.test_paging_url_tokens_stripped)
+Realistic paging.next URL has access_token stripped. ... ok
+test_saved_files_have_tokens_stripped (test_insight_probe.TokenTests.test_saved_files_have_tokens_stripped)
+End-to-end: saved JSON files have no tokens in paging URLs. ... ok
+test_missing_metric_is_no_data (test_insight_probe.ValueTests.test_missing_metric_is_no_data) ... ok
+test_null_is_no_data (test_insight_probe.ValueTests.test_null_is_no_data)
+NO_DATA means accepted by the API but no value present. ... ok
+test_undiscovered_metrics_reported (test_insight_probe.ValueTests.test_undiscovered_metrics_reported) ... ok
+test_zero_is_ok (test_insight_probe.ValueTests.test_zero_is_ok)
+A metric returning 0 is OK, not NO_DATA. ... ok
+test_sunday_night_vs_monday_morning_boundary 
+(test_insight_recommend.ISTWeekBoundaryTests.test_sunday_night_vs_monday_morning_boundary) ... ok
+test_number_guard_accepts_valid_numbers_and_multipliers 
+(test_insight_recommend.NumberGuardTests.test_number_guard_accepts_valid_numbers_and_multipliers) ... ok
+test_number_guard_rejects_causal_language 
+(test_insight_recommend.NumberGuardTests.test_number_guard_rejects_causal_language) ... ok
+test_number_guard_rejects_invented_numbers 
+(test_insight_recommend.NumberGuardTests.test_number_guard_rejects_invented_numbers) ... ok
+test_number_guard_rejects_invented_words_and_multipliers 
+(test_insight_recommend.NumberGuardTests.test_number_guard_rejects_invented_words_and_multipliers) ... ok
+test_number_words_like_twice_double_rejected_when_not_in_facts 
+(test_insight_recommend.NumberGuardTests.test_number_words_like_twice_double_rejected_when_not_in_facts) ... ok
+test_quality_guard_accepts_clean_creator_text 
+(test_insight_recommend.QualityGuardTests.test_quality_guard_accepts_clean_creator_text) ... ok
+test_quality_guard_rejects_backticks_and_raw_snake_case_keys 
+(test_insight_recommend.QualityGuardTests.test_quality_guard_rejects_backticks_and_raw_snake_case_keys) ... ok
+test_quality_guard_rejects_internal_keys_and_rank_and_checkpoint 
+(test_insight_recommend.QualityGuardTests.test_quality_guard_rejects_internal_keys_and_rank_and_checkpoint) ... ok
+test_quality_guard_rejects_mode_and_rank_and_snake_case 
+(test_insight_recommend.QualityGuardTests.test_quality_guard_rejects_mode_and_rank_and_snake_case) ... ok
+test_quality_guard_rejects_rank_leak_and_checkpoint_and_underscores 
+(test_insight_recommend.QualityGuardTests.test_quality_guard_rejects_rank_leak_and_checkpoint_and_underscores) ... ok
+test_audience_ideas_rank_first_in_evidence_mode 
+(test_insight_recommend.RecommendationEngineTests.test_audience_ideas_rank_first_in_evidence_mode)
+Step 5 audience ideas with >=2 distinct authors rank #1 in evidence mode. ... INFO  [alembic.runtime.migration] 
+Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 0001_baseline, baseline schema
+INFO  [alembic.runtime.migration] Running upgrade 0001_baseline -> 0002_post_tags, create post_tags table
+INFO  [alembic.runtime.migration] Running upgrade 0002_post_tags -> 0003_comments_and_audience, add is_own_account to 
+comments and create comment_labels table
+INFO  [alembic.runtime.migration] Running upgrade 0003_comments_and_audience -> 0004_recommendations, create 
+recommendation_sets, recommendations, and post_feedback tables
+INFO  [alembic.runtime.migration] Running upgrade 0004_recommendations -> 0005_reports_and_alerts, create alerts and 
+weekly_reports tables
+ok
+test_evidence_mode_selection_and_symmetric_avoid_thresholds 
+(test_insight_recommend.RecommendationEngineTests.test_evidence_mode_selection_and_symmetric_avoid_thresholds)
+Evidence mode recommends groups with >=1.2x baseline and >=3 posts; avoids <=0.8x baseline. ... INFO  
+[alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 0001_baseline, baseline schema
+INFO  [alembic.runtime.migration] Running upgrade 0001_baseline -> 0002_post_tags, create post_tags table
+INFO  [alembic.runtime.migration] Running upgrade 0002_post_tags -> 0003_comments_and_audience, add is_own_account to 
+comments and create comment_labels table
+INFO  [alembic.runtime.migration] Running upgrade 0003_comments_and_audience -> 0004_recommendations, create 
+recommendation_sets, recommendations, and post_feedback tables
+INFO  [alembic.runtime.migration] Running upgrade 0004_recommendations -> 0005_reports_and_alerts, create alerts and 
+weekly_reports tables
+ok
+test_expired_recommendations_after_14_days 
+(test_insight_recommend.RecommendationEngineTests.test_expired_recommendations_after_14_days)
+Recommendations older than 14 days without match are marked expired. ... INFO  [alembic.runtime.migration] Context 
+impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 0001_baseline, baseline schema
+INFO  [alembic.runtime.migration] Running upgrade 0001_baseline -> 0002_post_tags, create post_tags table
+INFO  [alembic.runtime.migration] Running upgrade 0002_post_tags -> 0003_comments_and_audience, add is_own_account to 
+comments and create comment_labels table
+INFO  [alembic.runtime.migration] Running upgrade 0003_comments_and_audience -> 0004_recommendations, create 
+recommendation_sets, recommendations, and post_feedback tables
+INFO  [alembic.runtime.migration] Running upgrade 0004_recommendations -> 0005_reports_and_alerts, create alerts and 
+weekly_reports tables
+ok
+test_exploration_mode_diversity_and_determinism 
+(test_insight_recommend.RecommendationEngineTests.test_exploration_mode_diversity_and_determinism)
+Exploration recommendations have distinct topics and are deterministic for a week. ... INFO  
+[alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 0001_baseline, baseline schema
+INFO  [alembic.runtime.migration] Running upgrade 0001_baseline -> 0002_post_tags, create post_tags table
+INFO  [alembic.runtime.migration] Running upgrade 0002_post_tags -> 0003_comments_and_audience, add is_own_account to 
+comments and create comment_labels table
+INFO  [alembic.runtime.migration] Running upgrade 0003_comments_and_audience -> 0004_recommendations, create 
+recommendation_sets, recommendations, and post_feedback tables
+INFO  [alembic.runtime.migration] Running upgrade 0004_recommendations -> 0005_reports_and_alerts, create alerts and 
+weekly_reports tables
+ok
+test_mode_switch_at_10_posts (test_insight_recommend.RecommendationEngineTests.test_mode_switch_at_10_posts)
+Mode is exploration for <10 posts with 7d views; switches to evidence at 10. ... INFO  [alembic.runtime.migration] 
+Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 0001_baseline, baseline schema
+INFO  [alembic.runtime.migration] Running upgrade 0001_baseline -> 0002_post_tags, create post_tags table
+INFO  [alembic.runtime.migration] Running upgrade 0002_post_tags -> 0003_comments_and_audience, add is_own_account to 
+comments and create comment_labels table
+INFO  [alembic.runtime.migration] Running upgrade 0003_comments_and_audience -> 0004_recommendations, create 
+recommendation_sets, recommendations, and post_feedback tables
+INFO  [alembic.runtime.migration] Running upgrade 0004_recommendations -> 0005_reports_and_alerts, create alerts and 
+weekly_reports tables
+ok
+test_one_to_one_matching_and_outcome_recording 
+(test_insight_recommend.RecommendationEngineTests.test_one_to_one_matching_and_outcome_recording)
+A post satisfies at most one recommendation (highest rank wins). Outcomes recorded on 7d. ... INFO  
+[alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 0001_baseline, baseline schema
+INFO  [alembic.runtime.migration] Running upgrade 0001_baseline -> 0002_post_tags, create post_tags table
+INFO  [alembic.runtime.migration] Running upgrade 0002_post_tags -> 0003_comments_and_audience, add is_own_account to 
+comments and create comment_labels table
+INFO  [alembic.runtime.migration] Running upgrade 0003_comments_and_audience -> 0004_recommendations, create 
+recommendation_sets, recommendations, and post_feedback tables
+INFO  [alembic.runtime.migration] Running upgrade 0004_recommendations -> 0005_reports_and_alerts, create alerts and 
+weekly_reports tables
+ok
+test_post_feedback_in_not_enough_data_tier_calls_no_gemini_and_has_no_judgements (test_insight_recommend.Recommendation
+EngineTests.test_post_feedback_in_not_enough_data_tier_calls_no_gemini_and_has_no_judgements)
+In <5 posts tier, post feedback NEVER calls Gemini and contains zero judgement words. ... INFO  
+[alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 0001_baseline, baseline schema
+INFO  [alembic.runtime.migration] Running upgrade 0001_baseline -> 0002_post_tags, create post_tags table
+INFO  [alembic.runtime.migration] Running upgrade 0002_post_tags -> 0003_comments_and_audience, add is_own_account to 
+comments and create comment_labels table
+INFO  [alembic.runtime.migration] Running upgrade 0003_comments_and_audience -> 0004_recommendations, create 
+recommendation_sets, recommendations, and post_feedback tables
+INFO  [alembic.runtime.migration] Running upgrade 0004_recommendations -> 0005_reports_and_alerts, create alerts and 
+weekly_reports tables
+ok
+test_posting_hour_block_12h_mapping (test_insight_recommend.SharedTimeBlocksTests.test_posting_hour_block_12h_mapping)
+get_posting_hour_block maps UTC times to IST 12-hour block strings. ... ok
+test_recommend_and_analysis_use_same_time_blocks_definition 
+(test_insight_recommend.SharedTimeBlocksTests.test_recommend_and_analysis_use_same_time_blocks_definition)
+Recommend and analysis must share the exact same POSTING_BLOCKS definition. ... ok
+test_recommendations_tab_renders_no_exceptions 
+(test_insight_recommend.StreamlitRecommendationsTabTests.test_recommendations_tab_renders_no_exceptions)
+AppTest verifies recommendations tab renders cleanly without exceptions. ... INFO  [alembic.runtime.migration] Context 
+impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 0001_baseline, baseline schema
+INFO  [alembic.runtime.migration] Running upgrade 0001_baseline -> 0002_post_tags, create post_tags table
+INFO  [alembic.runtime.migration] Running upgrade 0002_post_tags -> 0003_comments_and_audience, add is_own_account to 
+comments and create comment_labels table
+INFO  [alembic.runtime.migration] Running upgrade 0003_comments_and_audience -> 0004_recommendations, create 
+recommendation_sets, recommendations, and post_feedback tables
+INFO  [alembic.runtime.migration] Running upgrade 0004_recommendations -> 0005_reports_and_alerts, create alerts and 
+weekly_reports tables
+WARNI [insight.recommend] Gemini wording call failed: 429 You exceeded your current quota, please check your plan and 
+billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-limits. To monitor 
+your current usage, head to: https://ai.dev/rate-limit. 
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: 
+gemini-2.5-flash, description: Generate content requests per day limit exceeded on Free Tier. See 
+https://aistudio.google.com/docs/rate-limits.
+Please retry in 13h10m46.864784245s. [links {
+  description: "Learn more about Gemini API quotas"
+  url: "https://aistudio.google.com/docs/rate-limits"
+}
+, violations {
+  description: "Generate content requests per day limit exceeded on Free Tier. See 
+https://aistudio.google.com/docs/rate-limits."
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"
+  quota_id: "GenerateRequestsPerDayPerProjectPerModel-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-2.5-flash"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+  quota_value: 20
+}
+, retry_delay {
+  seconds: 47446
+}
+]
+WARNI [insight.recommend] Gemini wording call failed: 429 You exceeded your current quota, please check your plan and 
+billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-limits. To monitor 
+your current usage, head to: https://ai.dev/rate-limit. 
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: 
+gemini-2.5-flash, description: Generate content requests per day limit exceeded on Free Tier. See 
+https://aistudio.google.com/docs/rate-limits.
+Please retry in 13h10m46.483457324s. [links {
+  description: "Learn more about Gemini API quotas"
+  url: "https://aistudio.google.com/docs/rate-limits"
+}
+, violations {
+  description: "Generate content requests per day limit exceeded on Free Tier. See 
+https://aistudio.google.com/docs/rate-limits."
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"
+  quota_id: "GenerateRequestsPerDayPerProjectPerModel-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-2.5-flash"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+  quota_value: 20
+}
+, retry_delay {
+  seconds: 47446
+}
+]
+WARNI [insight.recommend] Gemini wording call failed: 429 You exceeded your current quota, please check your plan and 
+billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-limits. To monitor 
+your current usage, head to: https://ai.dev/rate-limit. 
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: 
+gemini-2.5-flash, description: Generate content requests per day limit exceeded on Free Tier. See 
+https://aistudio.google.com/docs/rate-limits.
+Please retry in 13h10m46.199204522s. [links {
+  description: "Learn more about Gemini API quotas"
+  url: "https://aistudio.google.com/docs/rate-limits"
+}
+, violations {
+  description: "Generate content requests per day limit exceeded on Free Tier. See 
+https://aistudio.google.com/docs/rate-limits."
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"
+  quota_id: "GenerateRequestsPerDayPerProjectPerModel-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-2.5-flash"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+  quota_value: 20
+}
+, retry_delay {
+  seconds: 47446
+}
+]
+WARNI [insight.recommend] Gemini wording call failed: 429 You exceeded your current quota, please check your plan and 
+billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-limits. To monitor 
+your current usage, head to: https://ai.dev/rate-limit. 
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: 
+gemini-2.5-flash, description: Generate content requests per day limit exceeded on Free Tier. See 
+https://aistudio.google.com/docs/rate-limits.
+Please retry in 13h10m45.90967828s. [links {
+  description: "Learn more about Gemini API quotas"
+  url: "https://aistudio.google.com/docs/rate-limits"
+}
+, violations {
+  description: "Generate content requests per day limit exceeded on Free Tier. See 
+https://aistudio.google.com/docs/rate-limits."
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"
+  quota_id: "GenerateRequestsPerDayPerProjectPerModel-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-2.5-flash"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+  quota_value: 20
+}
+, retry_delay {
+  seconds: 47445
+}
+]
+ERROR [sqlalchemy.pool.impl.QueuePool] Exception closing connection <sqlite3.Connection object at 0x0000021272A92890>
+Traceback (most recent call last):
+  File "D:\Insta - AI Agent\IG_Agent\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 372, in _close_connection
+    self._dialect.do_close(connection)
+  File "D:\Insta - AI Agent\IG_Agent\.venv\Lib\site-packages\sqlalchemy\engine\default.py", line 960, in do_close
+    dbapi_connection.close()
+sqlite3.ProgrammingError: SQLite objects created in a thread can only be used in that same thread. The object was 
+created in thread id 21276 and this is thread id 20556.
+ok
+test_compute_weekly_report_data_deterministic 
+(test_insight_report.WeeklyReportTests.test_compute_weekly_report_data_deterministic)
+Test that report metrics are computed deterministically. ... INFO  [alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 0001_baseline, baseline schema
+INFO  [alembic.runtime.migration] Running upgrade 0001_baseline -> 0002_post_tags, create post_tags table
+INFO  [alembic.runtime.migration] Running upgrade 0002_post_tags -> 0003_comments_and_audience, add is_own_account to 
+comments and create comment_labels table
+INFO  [alembic.runtime.migration] Running upgrade 0003_comments_and_audience -> 0004_recommendations, create 
+recommendation_sets, recommendations, and post_feedback tables
+INFO  [alembic.runtime.migration] Running upgrade 0004_recommendations -> 0005_reports_and_alerts, create alerts and 
+weekly_reports tables
+ok
+test_follower_growth_shows_both_readings_times_and_approximate_label 
+(test_insight_report.WeeklyReportTests.test_follower_growth_shows_both_readings_times_and_approximate_label)
+Refinement (d): Follower growth displays both readings with 12h IST times and approximate label. ... INFO  
+[alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 0001_baseline, baseline schema
+INFO  [alembic.runtime.migration] Running upgrade 0001_baseline -> 0002_post_tags, create post_tags table
+INFO  [alembic.runtime.migration] Running upgrade 0002_post_tags -> 0003_comments_and_audience, add is_own_account to 
+comments and create comment_labels table
+INFO  [alembic.runtime.migration] Running upgrade 0003_comments_and_audience -> 0004_recommendations, create 
+recommendation_sets, recommendations, and post_feedback tables
+INFO  [alembic.runtime.migration] Running upgrade 0004_recommendations -> 0005_reports_and_alerts, create alerts and 
+weekly_reports tables
+ok
+test_low_data_tier_uses_template_without_gemini 
+(test_insight_report.WeeklyReportTests.test_low_data_tier_uses_template_without_gemini)
+In low-data tier (<5 posts with 7d views), summary uses code template only and never calls Gemini. ... INFO  
+[alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 0001_baseline, baseline schema
+INFO  [alembic.runtime.migration] Running upgrade 0001_baseline -> 0002_post_tags, create post_tags table
+INFO  [alembic.runtime.migration] Running upgrade 0002_post_tags -> 0003_comments_and_audience, add is_own_account to 
+comments and create comment_labels table
+INFO  [alembic.runtime.migration] Running upgrade 0003_comments_and_audience -> 0004_recommendations, create 
+recommendation_sets, recommendations, and post_feedback tables
+INFO  [alembic.runtime.migration] Running upgrade 0004_recommendations -> 0005_reports_and_alerts, create alerts and 
+weekly_reports tables
+ok
+test_markdown_and_html_exporters (test_insight_report.WeeklyReportTests.test_markdown_and_html_exporters)
+Verify markdown and HTML exporters produce structured, valid output with all sections. ... INFO  
+[alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 0001_baseline, baseline schema
+INFO  [alembic.runtime.migration] Running upgrade 0001_baseline -> 0002_post_tags, create post_tags table
+INFO  [alembic.runtime.migration] Running upgrade 0002_post_tags -> 0003_comments_and_audience, add is_own_account to 
+comments and create comment_labels table
+INFO  [alembic.runtime.migration] Running upgrade 0003_comments_and_audience -> 0004_recommendations, create 
+recommendation_sets, recommendations, and post_feedback tables
+INFO  [alembic.runtime.migration] Running upgrade 0004_recommendations -> 0005_reports_and_alerts, create alerts and 
+weekly_reports tables
+ok
+test_next_weeks_plan_reuses_step6_set_with_no_ai_call 
+(test_insight_report.WeeklyReportTests.test_next_weeks_plan_reuses_step6_set_with_no_ai_call)
+Refinement (e): Next week's plan reuses the Step 6 recommendation set with human labels and zero AI calls. ... INFO  
+[alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 0001_baseline, baseline schema
+INFO  [alembic.runtime.migration] Running upgrade 0001_baseline -> 0002_post_tags, create post_tags table
+INFO  [alembic.runtime.migration] Running upgrade 0002_post_tags -> 0003_comments_and_audience, add is_own_account to 
+comments and create comment_labels table
+INFO  [alembic.runtime.migration] Running upgrade 0003_comments_and_audience -> 0004_recommendations, create 
+recommendation_sets, recommendations, and post_feedback tables
+INFO  [alembic.runtime.migration] Running upgrade 0004_recommendations -> 0005_reports_and_alerts, create alerts and 
+weekly_reports tables
+ok
+test_summary_dual_guards_reject_bad_ai_text 
+(test_insight_report.WeeklyReportTests.test_summary_dual_guards_reject_bad_ai_text)
+In evidence tier, AI text containing forbidden multipliers or taxonomy keys is rejected. ... INFO  
+[alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 0001_baseline, baseline schema
+INFO  [alembic.runtime.migration] Running upgrade 0001_baseline -> 0002_post_tags, create post_tags table
+INFO  [alembic.runtime.migration] Running upgrade 0002_post_tags -> 0003_comments_and_audience, add is_own_account to 
+comments and create comment_labels table
+INFO  [alembic.runtime.migration] Running upgrade 0003_comments_and_audience -> 0004_recommendations, create 
+recommendation_sets, recommendations, and post_feedback tables
+INFO  [alembic.runtime.migration] Running upgrade 0004_recommendations -> 0005_reports_and_alerts, create alerts and 
+weekly_reports tables
+ok
+test_unreadable_comments_message_shown_instead_of_zero_comments 
+(test_insight_report.WeeklyReportTests.test_unreadable_comments_message_shown_instead_of_zero_comments)
+Refinement (c): When comments_count > 0 but API returns none, report & audience show unreadable message, never '0 
+comments'. ... INFO  [alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 0001_baseline, baseline schema
+INFO  [alembic.runtime.migration] Running upgrade 0001_baseline -> 0002_post_tags, create post_tags table
+INFO  [alembic.runtime.migration] Running upgrade 0002_post_tags -> 0003_comments_and_audience, add is_own_account to 
+comments and create comment_labels table
+INFO  [alembic.runtime.migration] Running upgrade 0003_comments_and_audience -> 0004_recommendations, create 
+recommendation_sets, recommendations, and post_feedback tables
+INFO  [alembic.runtime.migration] Running upgrade 0004_recommendations -> 0005_reports_and_alerts, create alerts and 
+weekly_reports tables
+ok
+test_week_bounds_and_available_weeks (test_insight_report.WeeklyReportTests.test_week_bounds_and_available_weeks)
+Test available weeks discovery across publications and snapshots. ... INFO  [alembic.runtime.migration] Context impl 
+SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 0001_baseline, baseline schema
+INFO  [alembic.runtime.migration] Running upgrade 0001_baseline -> 0002_post_tags, create post_tags table
+INFO  [alembic.runtime.migration] Running upgrade 0002_post_tags -> 0003_comments_and_audience, add is_own_account to 
+comments and create comment_labels table
+INFO  [alembic.runtime.migration] Running upgrade 0003_comments_and_audience -> 0004_recommendations, create 
+recommendation_sets, recommendations, and post_feedback tables
+INFO  [alembic.runtime.migration] Running upgrade 0004_recommendations -> 0005_reports_and_alerts, create alerts and 
+weekly_reports tables
+ok
+test_delayed (test_insight_storage.CompletenessTests.test_delayed) ... ok
+test_missing_metrics_stored_as_null_with_reason 
+(test_insight_storage.CompletenessTests.test_missing_metrics_stored_as_null_with_reason) ... ok
+test_no_result_is_unavailable (test_insight_storage.CompletenessTests.test_no_result_is_unavailable) ... ok
+test_raw_response_tokens_stripped (test_insight_storage.CompletenessTests.test_raw_response_tokens_stripped) ... ok
+test_all_tables_created (test_insight_storage.SchemaTests.test_all_tables_created) ... ok
+test_seed_loaded_and_idempotent (test_insight_storage.SchemaTests.test_seed_loaded_and_idempotent) ... ok
+test_snapshot_must_have_exactly_one_subject 
+(test_insight_storage.SchemaTests.test_snapshot_must_have_exactly_one_subject) ... ok
+test_snapshot_subject_must_match_fk (test_insight_storage.SchemaTests.test_snapshot_subject_must_match_fk) ... ok
+test_aware_datetimes_round_trip_as_utc (test_insight_storage.UTCTests.test_aware_datetimes_round_trip_as_utc) ... ok
+test_naive_datetime_rejected (test_insight_storage.UTCTests.test_naive_datetime_rejected) ... ok
+test_adhoc_period_key_is_timestamp (test_insight_storage.UniquenessTests.test_adhoc_period_key_is_timestamp) ... ok
+test_comment_dedup_and_parent_link (test_insight_storage.UniquenessTests.test_comment_dedup_and_parent_link) ... ok
+test_daily_period_key_is_utc_date (test_insight_storage.UniquenessTests.test_daily_period_key_is_utc_date) ... ok
+test_duplicate_account_snapshot_rejected_by_db 
+(test_insight_storage.UniquenessTests.test_duplicate_account_snapshot_rejected_by_db) ... ok
+test_duplicate_metric_value_rejected (test_insight_storage.UniquenessTests.test_duplicate_metric_value_rejected) ... ok
+test_duplicate_publication_rejected_by_db 
+(test_insight_storage.UniquenessTests.test_duplicate_publication_rejected_by_db) ... ok
+test_duplicate_publication_snapshot_rejected_by_db 
+(test_insight_storage.UniquenessTests.test_duplicate_publication_snapshot_rejected_by_db) ... ok
+test_post_checkpoint_rejected_for_account 
+(test_insight_storage.UniquenessTests.test_post_checkpoint_rejected_for_account) ... ok
+test_save_snapshot_is_idempotent (test_insight_storage.UniquenessTests.test_save_snapshot_is_idempotent) ... ok
+test_alembic_at_head (test_insight_view.AlembicVersionTests.test_alembic_at_head) ... INFO  
+[alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 0001_baseline, baseline schema
+INFO  [alembic.runtime.migration] Running upgrade 0001_baseline -> 0002_post_tags, create post_tags table
+INFO  [alembic.runtime.migration] Running upgrade 0002_post_tags -> 0003_comments_and_audience, add is_own_account to 
+comments and create comment_labels table
+INFO  [alembic.runtime.migration] Running upgrade 0003_comments_and_audience -> 0004_recommendations, create 
+recommendation_sets, recommendations, and post_feedback tables
+INFO  [alembic.runtime.migration] Running upgrade 0004_recommendations -> 0005_reports_and_alerts, create alerts and 
+weekly_reports tables
+ok
+test_alembic_not_at_head (test_insight_view.AlembicVersionTests.test_alembic_not_at_head) ... INFO  
+[alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 0001_baseline, baseline schema
+INFO  [alembic.runtime.migration] Running upgrade 0001_baseline -> 0002_post_tags, create post_tags table
+INFO  [alembic.runtime.migration] Running upgrade 0002_post_tags -> 0003_comments_and_audience, add is_own_account to 
+comments and create comment_labels table
+INFO  [alembic.runtime.migration] Running upgrade 0003_comments_and_audience -> 0004_recommendations, create 
+recommendation_sets, recommendations, and post_feedback tables
+INFO  [alembic.runtime.migration] Running upgrade 0004_recommendations -> 0005_reports_and_alerts, create alerts and 
+weekly_reports tables
+ok
+test_no_alembic_table (test_insight_view.AlembicVersionTests.test_no_alembic_table) ... ok
+test_busy_timeout_is_set (test_insight_view.ConcurrencyTests.test_busy_timeout_is_set)
+Verify the busy_timeout PRAGMA is actually applied. ... ok
+test_readonly_during_write_does_not_block 
+(test_insight_view.ConcurrencyTests.test_readonly_during_write_does_not_block) ... ok
+test_checkpoint_order (test_insight_view.DryRunAndDisplayTests.test_checkpoint_order) ... ok
+test_format_metric_zero_is_not_dash (test_insight_view.DryRunAndDisplayTests.test_format_metric_zero_is_not_dash)
+Zero is a valid value, should show '0' not '—'. ... ok
+test_post_metrics_list (test_insight_view.DryRunAndDisplayTests.test_post_metrics_list) ... ok
+test_check_db_exists_false (test_insight_view.EmptyDBTests.test_check_db_exists_false) ... ok
+test_empty_db_no_publications (test_insight_view.EmptyDBTests.test_empty_db_no_publications) ... ok
+test_completeness_markers_defined (test_insight_view.FormattingTests.test_completeness_markers_defined) ... ok
+test_format_age_seconds (test_insight_view.FormattingTests.test_format_age_seconds) ... ok
+test_integer_values_formatted_without_decimal 
+(test_insight_view.FormattingTests.test_integer_values_formatted_without_decimal) ... ok
+test_midnight_utc_formats_as_530am_ist (test_insight_view.FormattingTests.test_midnight_utc_formats_as_530am_ist) ... 
+ok
+test_missing_metric_value_shows_dash (test_insight_view.FormattingTests.test_missing_metric_value_shows_dash) ... ok
+test_none_formats_as_dash (test_insight_view.FormattingTests.test_none_formats_as_dash) ... ok
+test_utc_to_ist_12h (test_insight_view.FormattingTests.test_utc_to_ist_12h) ... ok
+test_watch_time_has_seconds_suffix (test_insight_view.FormattingTests.test_watch_time_has_seconds_suffix) ... ok
+test_last_20_entries_returned (test_insight_view.LogParsingTests.test_last_20_entries_returned) ... ok
+test_last_successful_run (test_insight_view.LogParsingTests.test_last_successful_run) ... ok
+test_last_successful_run_none (test_insight_view.LogParsingTests.test_last_successful_run_none) ... ok
+test_missing_log_returns_empty (test_insight_view.LogParsingTests.test_missing_log_returns_empty) ... ok
+test_parse_error_lines (test_insight_view.LogParsingTests.test_parse_error_lines) ... ok
+test_parse_real_log_lines (test_insight_view.LogParsingTests.test_parse_real_log_lines) ... ok
+test_no_overdue_when_all_collected (test_insight_view.OverdueCheckpointTests.test_no_overdue_when_all_collected)
+Post with all reachable checkpoints collected → no overdue. ... ok
+test_overdue_detection (test_insight_view.OverdueCheckpointTests.test_overdue_detection)
+A post older than 1h with no 1h snapshot → overdue. ... ok
+test_account_info (test_insight_view.QueryFunctionTests.test_account_info) ... ok
+test_adhoc_snapshot_present (test_insight_view.QueryFunctionTests.test_adhoc_snapshot_present) ... ok
+test_daily_account_metrics (test_insight_view.QueryFunctionTests.test_daily_account_metrics) ... ok
+test_daily_metrics_never_contain_followers 
+(test_insight_view.QueryFunctionTests.test_daily_metrics_never_contain_followers) ... ok
+test_followers_over_time (test_insight_view.QueryFunctionTests.test_followers_over_time) ... ok
+test_get_posts_returns_correct_count (test_insight_view.QueryFunctionTests.test_get_posts_returns_correct_count) ... ok
+test_post_snapshots_have_metrics (test_insight_view.QueryFunctionTests.test_post_snapshots_have_metrics) ... ok
+test_posts_sorted_newest_first (test_insight_view.QueryFunctionTests.test_posts_sorted_newest_first) ... ok
+test_raw_response_stats (test_insight_view.QueryFunctionTests.test_raw_response_stats) ... ok
+test_snapshot_completeness_counts (test_insight_view.QueryFunctionTests.test_snapshot_completeness_counts) ... ok
+test_unavailable_snapshot_has_no_metrics 
+(test_insight_view.QueryFunctionTests.test_unavailable_snapshot_has_no_metrics) ... ok
+test_missing_db_returns_none (test_insight_view.ReadOnlyEnforcementTests.test_missing_db_returns_none) ... ok
+test_write_attempt_fails_on_readonly (test_insight_view.ReadOnlyEnforcementTests.test_write_attempt_fails_on_readonly) 
+... ok
+test_render_with_fixture_data (test_insight_view.StreamlitRenderTests.test_render_with_fixture_data)
+Render against a temp DB with fixture data: no exception, renders tabs. ... INFO  [alembic.runtime.migration] Context 
+impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 0001_baseline, baseline schema
+INFO  [alembic.runtime.migration] Running upgrade 0001_baseline -> 0002_post_tags, create post_tags table
+INFO  [alembic.runtime.migration] Running upgrade 0002_post_tags -> 0003_comments_and_audience, add is_own_account to 
+comments and create comment_labels table
+INFO  [alembic.runtime.migration] Running upgrade 0003_comments_and_audience -> 0004_recommendations, create 
+recommendation_sets, recommendations, and post_feedback tables
+INFO  [alembic.runtime.migration] Running upgrade 0004_recommendations -> 0005_reports_and_alerts, create alerts and 
+weekly_reports tables
+ok
+test_render_with_missing_db (test_insight_view.StreamlitRenderTests.test_render_with_missing_db)
+Render against a non-existent DB path: does not crash, shows 'No data yet'. ... ok
+test_view_operations_strictly_readonly_on_database 
+(test_insight_view.StreamlitRenderTests.test_view_operations_strictly_readonly_on_database)
+Verify that view query operations NEVER write to the SQLite database file. ... INFO  [alembic.runtime.migration] 
+Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 0001_baseline, baseline schema
+INFO  [alembic.runtime.migration] Running upgrade 0001_baseline -> 0002_post_tags, create post_tags table
+INFO  [alembic.runtime.migration] Running upgrade 0002_post_tags -> 0003_comments_and_audience, add is_own_account to 
+comments and create comment_labels table
+INFO  [alembic.runtime.migration] Running upgrade 0003_comments_and_audience -> 0004_recommendations, create 
+recommendation_sets, recommendations, and post_feedback tables
+INFO  [alembic.runtime.migration] Running upgrade 0004_recommendations -> 0005_reports_and_alerts, create alerts and 
+weekly_reports tables
+ok
+test_view_state_atomic_and_dismissal (test_insight_view.StreamlitRenderTests.test_view_state_atomic_and_dismissal)
+Test view_state.json atomic operations and alert dismissals. ... ok
+test_back_to_review_needs_video_and_plan 
+(test_master_loop.PublishApprovedVideoTest.test_back_to_review_needs_video_and_plan) ... ok
+test_back_to_review_only_from_failed (test_master_loop.PublishApprovedVideoTest.test_back_to_review_only_from_failed) 
+... ok
+test_back_to_review_then_retry_succeeds 
+(test_master_loop.PublishApprovedVideoTest.test_back_to_review_then_retry_succeeds) ... ok
+test_failure_before_graph_api_is_setup_step 
+(test_master_loop.PublishApprovedVideoTest.test_failure_before_graph_api_is_setup_step) ... ok
+test_interrupt_still_ends_failed (test_master_loop.PublishApprovedVideoTest.test_interrupt_still_ends_failed) ... ok
+test_invalid_publish_mode_ends_failed 
+(test_master_loop.PublishApprovedVideoTest.test_invalid_publish_mode_ends_failed) ... ok
+test_missing_video_ends_failed (test_master_loop.PublishApprovedVideoTest.test_missing_video_ends_failed) ... ok
+test_network_error_at_publish_step_warns_of_possible_duplicate 
+(test_master_loop.PublishApprovedVideoTest.test_network_error_at_publish_step_warns_of_possible_duplicate) ... ok
+test_ngrok_head_check_failure_creates_no_container 
+(test_master_loop.PublishApprovedVideoTest.test_ngrok_head_check_failure_creates_no_container) ... ok
+test_ngrok_kill_failure_does_not_mask_success 
+(test_master_loop.PublishApprovedVideoTest.test_ngrok_kill_failure_does_not_mask_success) ... ok
+test_ngrok_missing_authtoken_ends_failed 
+(test_master_loop.PublishApprovedVideoTest.test_ngrok_missing_authtoken_ends_failed) ... ok
+test_ngrok_success_serves_only_the_reel_and_cleans_up 
+(test_master_loop.PublishApprovedVideoTest.test_ngrok_success_serves_only_the_reel_and_cleans_up) ... ok
+test_ngrok_tunnel_failure_still_cleans_up 
+(test_master_loop.PublishApprovedVideoTest.test_ngrok_tunnel_failure_still_cleans_up) ... ok
+test_publish_output_is_plain_ascii (test_master_loop.PublishApprovedVideoTest.test_publish_output_is_plain_ascii)
+A cp1252 console (Windows default when piped) must not crash on publish logs. ... ok
+test_records_failing_step (test_master_loop.PublishApprovedVideoTest.test_records_failing_step) ... ok
+test_refuses_to_publish_outside_pending_review 
+(test_master_loop.PublishApprovedVideoTest.test_refuses_to_publish_outside_pending_review) ... ok
+test_reset_after_failure_clears_error 
+(test_master_loop.PublishApprovedVideoTest.test_reset_after_failure_clears_error) ... ok
+test_resumable_failure_ends_failed_with_error_and_response 
+(test_master_loop.PublishApprovedVideoTest.test_resumable_failure_ends_failed_with_error_and_response) ... ok
+test_resumable_success_ends_idle (test_master_loop.PublishApprovedVideoTest.test_resumable_success_ends_idle) ... ok
+test_success_stores_media_id (test_master_loop.PublishApprovedVideoTest.test_success_stores_media_id) ... ok
+test_dry_run_keeps_tunnel_for_batch_and_moves_nothing 
+(test_publish_inbox.NgrokPublishTest.test_dry_run_keeps_tunnel_for_batch_and_moves_nothing) ... ok
+test_head_failure_on_one_video_does_not_stop_the_next 
+(test_publish_inbox.NgrokPublishTest.test_head_failure_on_one_video_does_not_stop_the_next) ... ok
+test_interrupt_tears_down_tunnel (test_publish_inbox.NgrokPublishTest.test_interrupt_tears_down_tunnel) ... ok
+test_one_tunnel_for_the_whole_batch_serving_only_approved_videos 
+(test_publish_inbox.NgrokPublishTest.test_one_tunnel_for_the_whole_batch_serving_only_approved_videos) ... ok
+test_tunnel_failure_publishes_nothing_and_moves_nothing 
+(test_publish_inbox.NgrokPublishTest.test_tunnel_failure_publishes_nothing_and_moves_nothing) ... ok
+test_approved_video_is_published_and_moved_to_posted 
+(test_publish_inbox.ResumablePublishTest.test_approved_video_is_published_and_moved_to_posted) ... ok
+test_credential_failure_leaves_everything_in_inbox 
+(test_publish_inbox.ResumablePublishTest.test_credential_failure_leaves_everything_in_inbox) ... ok
+test_dry_run_never_publishes_and_moves_nothing 
+(test_publish_inbox.ResumablePublishTest.test_dry_run_never_publishes_and_moves_nothing) ... ok
+test_interrupt_mid_batch_files_current_video_and_leaves_rest 
+(test_publish_inbox.ResumablePublishTest.test_interrupt_mid_batch_files_current_video_and_leaves_rest) ... ok
+test_move_failure_after_publish_is_flagged_and_batch_continues 
+(test_publish_inbox.ResumablePublishTest.test_move_failure_after_publish_is_flagged_and_batch_continues) ... ok
+test_name_clash_in_posted_gets_unique_name 
+(test_publish_inbox.ResumablePublishTest.test_name_clash_in_posted_gets_unique_name) ... ok
+test_one_failure_does_not_stop_the_batch 
+(test_publish_inbox.ResumablePublishTest.test_one_failure_does_not_stop_the_batch) ... ok
+test_unexpected_exception_is_contained_too 
+(test_publish_inbox.ResumablePublishTest.test_unexpected_exception_is_contained_too) ... ok
+test_blank_sidecar_counts_as_missing (test_publish_inbox.ReviewTest.test_blank_sidecar_counts_as_missing) ... ok
+test_closed_stdin_is_treated_as_q (test_publish_inbox.ReviewTest.test_closed_stdin_is_treated_as_q) ... ok
+test_creates_folders_and_handles_empty_inbox 
+(test_publish_inbox.ReviewTest.test_creates_folders_and_handles_empty_inbox) ... ok
+test_empty_caption_skips_video (test_publish_inbox.ReviewTest.test_empty_caption_skips_video) ... ok
+test_invalid_answer_reprompts_and_blank_is_not_approval 
+(test_publish_inbox.ReviewTest.test_invalid_answer_reprompts_and_blank_is_not_approval) ... ok
+test_lists_size_and_sidecar_caption_without_prompting_for_it 
+(test_publish_inbox.ReviewTest.test_lists_size_and_sidecar_caption_without_prompting_for_it) ... ok
+test_missing_caption_is_prompted_and_saved (test_publish_inbox.ReviewTest.test_missing_caption_is_prompted_and_saved) 
+... ok
+test_nothing_publishes_without_explicit_y (test_publish_inbox.ReviewTest.test_nothing_publishes_without_explicit_y) 
+... ok
+test_only_videos_directly_in_inbox_are_listed 
+(test_publish_inbox.ReviewTest.test_only_videos_directly_in_inbox_are_listed) ... ok
+test_q_stops_review_but_publishes_earlier_y 
+(test_publish_inbox.ReviewTest.test_q_stops_review_but_publishes_earlier_y) ... ok
+test_sidecar_with_bom_is_read_cleanly (test_publish_inbox.ReviewTest.test_sidecar_with_bom_is_read_cleanly) ... ok
+test_container_error_still_tears_down (test_publish_test_script.NgrokModeTest.test_container_error_still_tears_down) 
+... ok
+test_dry_run_creates_container_with_video_url_and_never_publishes 
+(test_publish_test_script.NgrokModeTest.test_dry_run_creates_container_with_video_url_and_never_publishes) ... ok
+test_head_check_failure_creates_no_container 
+(test_publish_test_script.NgrokModeTest.test_head_check_failure_creates_no_container) ... ok
+test_interrupt_during_poll_tears_down_and_exits_130 
+(test_publish_test_script.NgrokModeTest.test_interrupt_during_poll_tears_down_and_exits_130) ... ok
+test_live_run_publishes (test_publish_test_script.NgrokModeTest.test_live_run_publishes) ... ok
+test_missing_authtoken_fails_before_container 
+(test_publish_test_script.NgrokModeTest.test_missing_authtoken_fails_before_container) ... ok
+test_missing_video_fails_before_tunnel (test_publish_test_script.NgrokModeTest.test_missing_video_fails_before_tunnel) 
+... ok
+test_serves_only_the_target_file_while_meta_fetches 
+(test_publish_test_script.NgrokModeTest.test_serves_only_the_target_file_while_meta_fetches) ... ok
+test_bad_credentials_exit_1_before_any_upload 
+(test_publish_test_script.ResumableModeTest.test_bad_credentials_exit_1_before_any_upload) ... ok
+test_dry_run_verifies_uploads_polls_but_never_publishes 
+(test_publish_test_script.ResumableModeTest.test_dry_run_verifies_uploads_polls_but_never_publishes) ... ok
+test_interrupt_during_publish_warns_and_exits_130 
+(test_publish_test_script.ResumableModeTest.test_interrupt_during_publish_warns_and_exits_130) ... ok
+test_invalid_publish_mode_exit_1 (test_publish_test_script.ResumableModeTest.test_invalid_publish_mode_exit_1) ... ok
+test_live_run_publishes (test_publish_test_script.ResumableModeTest.test_live_run_publishes) ... ok
+test_missing_video_exit_1 (test_publish_test_script.ResumableModeTest.test_missing_video_exit_1) ... ok
+test_poll_error_exit_1_with_response (test_publish_test_script.ResumableModeTest.test_poll_error_exit_1_with_response) 
+... ok
+test_publish_step_failure_warns_of_possible_duplicate 
+(test_publish_test_script.ResumableModeTest.test_publish_step_failure_warns_of_possible_duplicate) ... ok
+test_requires_video_and_caption (test_publish_test_script.ResumableModeTest.test_requires_video_and_caption) ... ok
+test_resumable_on_instagram_host_tells_user_to_use_ngrok 
+(test_publish_test_script.ResumableModeTest.test_resumable_on_instagram_host_tells_user_to_use_ngrok) ... ok
+test_binds_to_localhost_only (test_tunnel.TunnelTest.test_binds_to_localhost_only) ... ok
+test_bracketed_authtoken_is_rejected_without_echoing_it 
+(test_tunnel.TunnelTest.test_bracketed_authtoken_is_rejected_without_echoing_it) ... ok
+test_check_public_url_fails_on_404_after_retries 
+(test_tunnel.TunnelTest.test_check_public_url_fails_on_404_after_retries) ... ok
+test_check_public_url_fails_on_wrong_content_type 
+(test_tunnel.TunnelTest.test_check_public_url_fails_on_wrong_content_type) ... ok
+test_check_public_url_passes_for_served_video (test_tunnel.TunnelTest.test_check_public_url_passes_for_served_video) 
+... ok
+test_check_public_url_retries_then_succeeds (test_tunnel.TunnelTest.test_check_public_url_retries_then_succeeds) ... ok
+test_connect_failure_is_wrapped (test_tunnel.TunnelTest.test_connect_failure_is_wrapped) ... ok
+test_head_returns_headers_without_body (test_tunnel.TunnelTest.test_head_returns_headers_without_body) ... ok
+test_missing_authtoken_fails_clearly_without_connecting 
+(test_tunnel.TunnelTest.test_missing_authtoken_fails_clearly_without_connecting) ... ok
+test_missing_file_raises (test_tunnel.TunnelTest.test_missing_file_raises) ... ok
+test_open_tunnel_sets_authtoken_and_connects (test_tunnel.TunnelTest.test_open_tunnel_sets_authtoken_and_connects) ... 
+ok
+test_open_tunnel_upgrades_http_url_to_https (test_tunnel.TunnelTest.test_open_tunnel_upgrades_http_url_to_https) ... ok
+test_serves_only_the_target_file (test_tunnel.TunnelTest.test_serves_only_the_target_file) ... ok
+test_stop_closes_server_and_kills_ngrok_even_if_kill_fails 
+(test_tunnel.TunnelTest.test_stop_closes_server_and_kills_ngrok_even_if_kill_fails) ... ok
+
+----------------------------------------------------------------------
+Ran 352 tests in 55.633s
+
+OK
+views                        views                                reel       OK         500             
+reach                        reach                                reel       OK         300             
+likes                        likes                                reel       OK         20              
+comments                     comments                             reel       OK         5               
+shares                       shares                               reel       OK         3               
+saves                        saved                                reel       OK         7               
+total_interactions           total_interactions                   reel       OK         35              
+avg_watch_time_seconds       ig_reels_avg_watch_time              reel       OK         8000            
+total_watch_time_seconds     ig_reels_video_view_total_time       reel       OK         4000000         
+followers                    followers_count                      account    OK         100             
+profile_visits               profile_views                        account    OK         10              
+reach                        reach                                account    OK         50              
+views                        views                                account    OK         200             
+[probe] Starting Instagram API probe...
+[probe] Account: @tester  followers=100  posts=5
+[probe] Media page: 1 items, 0 Reel(s)
+[probe] No Reels found on first page; skipping reel insights
+
+[probe] API calls used: 3/40
+[probe] Note: only 0 Reel(s) found (probed all available)
+
+canonical_name               platform_name                        applies_to status     sample_value    error
+-------------------------------------------------------------------------------------------------------------
+views                        views                                reel       NOT_TRIED                  no reels on account
+reach                        reach                                reel       NOT_TRIED                  no reels on account
+likes                        likes                                reel       NOT_TRIED                  no reels on account
+comments                     comments                             reel       NOT_TRIED                  no reels on account
+shares                       shares                               reel       NOT_TRIED                  no reels on account
+saves                        saved                                reel       NOT_TRIED                  no reels on account
+total_interactions           total_interactions                   reel       NOT_TRIED                  no reels on account
+avg_watch_time_seconds       ig_reels_avg_watch_time              reel       NOT_TRIED                  no reels on account
+total_watch_time_seconds     ig_reels_video_view_total_time       reel       NOT_TRIED                  no reels on account
+followers                    followers_count                      account    OK         100             
+profile_visits               profile_views                        account    OK         10              
+reach                        reach                                account    OK         50              
+views                        views                                account    OK         200             
+[probe] Saved 1 response(s) to C:\Users\jaina\AppData\Local\Temp\tmprmelgmu7\20261120T184908Z
+[settings] GEMINI_API_KEY <- .env
+[publish] Sending to Instagram (PUBLISH_MODE=resumable)...
+[publish] FAILED at step container: IGPublishError: POST /1784/media -> HTTP 400: Bad request
+[publish] Sending to Instagram (PUBLISH_MODE=resumable)...
+[publish] PUBLISH SUCCESSFUL! IG Media ID: M8
+[publish] FAILED at step setup: FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\jaina\\AppData\\Local\\Temp\\tmpgupb7fd9\\tmpnmbn_gdq\\current_video_plan.json'
+[publish] Sending to Instagram (PUBLISH_MODE=resumable)...
+[publish] FAILED at step setup: KeyboardInterrupt: 
+[publish] FAILED at step setup: IGPublishError: PUBLISH_MODE must be one of ('resumable', 'ngrok'), got 'bogus'
+[publish] FAILED at step setup: FileNotFoundError: Video not found: C:\Users\jaina\AppData\Local\Temp\tmpgupb7fd9\tmp9cc5r1me\final_reel.mp4
+[publish] Sending to Instagram (PUBLISH_MODE=resumable)...
+[publish] FAILED at step publish: IGPublishError: POST /1784/media_publish failed: read timed out
+[publish] Sending to Instagram (PUBLISH_MODE=ngrok)...
+[publish] Opening ngrok tunnel to the final video...
+[publish] Public URL: https://abc.ngrok.app/final_reel.mp4
+[publish] FAILED at step tunnel: TunnelError: Public URL check failed: HTTP 404
+[publish] Sending to Instagram (PUBLISH_MODE=resumable)...
+[publish] PUBLISH SUCCESSFUL! IG Media ID: M1
+[tunnel] WARNING: ngrok cleanup failed: ngrok not running
+[publish] Sending to Instagram (PUBLISH_MODE=ngrok)...
+[publish] Opening ngrok tunnel to the final video...
+[publish] FAILED at step tunnel: TunnelError: NGROK_AUTHTOKEN is not set. Add it to .env (get it from https://dashboard.ngrok.com/get-started/your-authtoken).
+[publish] Sending to Instagram (PUBLISH_MODE=ngrok)...
+[publish] Opening ngrok tunnel to the final video...
+[publish] Public URL: https://abc.ngrok.app/final_reel.mp4
+[publish] PUBLISH SUCCESSFUL! IG Media ID: M2
+[publish] Sending to Instagram (PUBLISH_MODE=ngrok)...
+[publish] Opening ngrok tunnel to the final video...
+[publish] FAILED at step tunnel: TunnelError: Could not open ngrok tunnel: RuntimeError: ngrok auth failed
+[publish] Sending to Instagram (PUBLISH_MODE=resumable)...
+[publish] FAILED at step container: IGPublishError: POST /1784/media -> HTTP 400: Bad request
+[publish] Sending to Instagram (PUBLISH_MODE=resumable)...
+[publish] FAILED at step upload: IGPublishError: Upload failed: ProcessingFailedError
+[publish] Sending to Instagram (PUBLISH_MODE=resumable)...
+[publish] FAILED at step poll: IGPublishError: Container ERROR: Error: 2207026
+[publish] Sending to Instagram (PUBLISH_MODE=resumable)...
+[publish] FAILED at step publish: IGPublishError: POST /1784/media_publish -> HTTP 400: Bad request
+[publish] Sending to Instagram (PUBLISH_MODE=resumable)...
+[publish] FAILED at step publish: IGPublishError: POST /1784/media_publish -> HTTP 400: Bad request
+[publish] Sending to Instagram (PUBLISH_MODE=resumable)...
+[publish] FAILED at step setup: IGPublishError: Container ERROR: Error: 2207026
+[publish] Sending to Instagram (PUBLISH_MODE=resumable)...
+[publish] PUBLISH SUCCESSFUL! IG Media ID: M1
+[publish] Sending to Instagram (PUBLISH_MODE=resumable)...
+[publish] PUBLISH SUCCESSFUL! IG Media ID: M7
