@@ -25,8 +25,10 @@ from agents.content.prompts import (
 from agents.content.schemas import PLAN_JSON_SCHEMA
 from agents.content.settings import ALLOWED_MODES, DEFAULT_BRAND_VOICE, DEFAULT_LANGUAGE
 from agents.content.validator import (
+    compute_scene_duration,
     ensure_character_in_visual_prompts,
     sanitize_and_finalize_plan,
+    split_long_script_scenes,
     validate_plan,
 )
 
@@ -40,12 +42,13 @@ class ContentAgent(BaseAgent):
         self,
         brand_voice: str = DEFAULT_BRAND_VOICE,
         language: str = DEFAULT_LANGUAGE,
-        **llm_overrides: Any,
+        provider: Optional[str] = None,
+        **extra_kwargs: Any,
     ):
         super().__init__(name="content")
         self.brand_voice = brand_voice
         self.language = language
-        self.llm_overrides = llm_overrides
+        self.provider = provider or extra_kwargs.get("provider")
 
     def _read_spec(self, task: AgentTask) -> RunSpec:
         """Read RunSpec strictly from the run's spec.yaml file if available."""
@@ -71,33 +74,6 @@ class ContentAgent(BaseAgent):
             or spec.extra.get("character")
             or spec.extra.get("character_text")
         )
-
-    def _resolve_llm_overrides(self, spec: RunSpec, raw_dict: Dict[str, Any]) -> Dict[str, Any]:
-        """Resolve LLM overrides from constructor, environment, or spec."""
-        overrides = dict(self.llm_overrides)
-        if "provider" not in overrides:
-            env_provider = os.getenv("LLM_PROVIDER")
-            if env_provider:
-                overrides["provider"] = env_provider
-            elif "provider" in raw_dict:
-                overrides["provider"] = raw_dict["provider"]
-            elif "provider" in spec.extra:
-                overrides["provider"] = spec.extra["provider"]
-        if "model" not in overrides:
-            env_model = os.getenv("LLM_MODEL")
-            if env_model:
-                overrides["model"] = env_model
-            elif "model" in raw_dict:
-                overrides["model"] = raw_dict["model"]
-            elif "model" in spec.extra:
-                overrides["model"] = spec.extra["model"]
-        if "backup" not in overrides:
-            env_backup_model = os.getenv("LLM_BACKUP_MODEL")
-            if env_backup_model:
-                overrides["backup"] = {"model": env_backup_model}
-            elif "backup" in spec.extra:
-                overrides["backup"] = spec.extra["backup"]
-        return overrides
 
     def run(self, task: AgentTask) -> AgentResult:
         """Execute the content agent task and generate plan.json atomically."""
@@ -126,7 +102,6 @@ class ContentAgent(BaseAgent):
         mode = raw_mode
 
         character_desc = self._resolve_character_desc(spec, raw_yaml_dict)
-        llm_overrides = self._resolve_llm_overrides(spec, raw_yaml_dict)
 
         # 2. Build system and user prompt for the given mode
         system_prompt = build_system_prompt(brand_voice=self.brand_voice, language=self.language)
@@ -174,13 +149,19 @@ class ContentAgent(BaseAgent):
         ]
 
         # 3. Call core LLM
+        # Model choice comes ONLY from config/agents.yaml via core.llm
+        llm_kwargs: Dict[str, Any] = {}
+        provider = self.provider or os.getenv("LLM_PROVIDER")
+        if provider:
+            llm_kwargs["provider"] = provider
+
         try:
             response = llm.complete(
                 agent="content",
                 messages=messages,
                 json_schema=PLAN_JSON_SCHEMA,
                 run_id=task.run_id,
-                **llm_overrides,
+                **llm_kwargs,
             )
         except Exception as e:
             return AgentResult(
@@ -194,6 +175,18 @@ class ContentAgent(BaseAgent):
                 plan_data = json.loads(response.text)
             except Exception:
                 plan_data = None
+
+        # In script mode: code splits any scene whose narration needs > 8s at sentence/clause boundary
+        if mode == "script" and isinstance(plan_data, dict) and isinstance(plan_data.get("scenes"), list):
+            plan_data["scenes"] = split_long_script_scenes(plan_data["scenes"])
+            if plan_data["scenes"]:
+                plan_data["hook"] = plan_data["scenes"][0].get("narration", plan_data.get("hook", ""))
+
+        # Code computes duration_hint_s for all scenes from word count (ignoring model's numbers)
+        if isinstance(plan_data, dict) and isinstance(plan_data.get("scenes"), list):
+            for s in plan_data["scenes"]:
+                if isinstance(s, dict):
+                    s["duration_hint_s"] = compute_scene_duration(s.get("narration", ""))
 
         # Guarantee character description in every visual_prompt before validation
         if mode == "character" and character_desc and isinstance(plan_data, dict):
@@ -228,7 +221,7 @@ class ContentAgent(BaseAgent):
                     messages=repair_messages,
                     json_schema=PLAN_JSON_SCHEMA,
                     run_id=task.run_id,
-                    **llm_overrides,
+                    **llm_kwargs,
                 )
                 repaired_data = repair_resp.data
                 if not isinstance(repaired_data, dict):
@@ -236,6 +229,18 @@ class ContentAgent(BaseAgent):
                         repaired_data = json.loads(repair_resp.text)
                     except Exception:
                         repaired_data = None
+
+                # In script mode, code splits long scenes on repaired data as well
+                if mode == "script" and isinstance(repaired_data, dict) and isinstance(repaired_data.get("scenes"), list):
+                    repaired_data["scenes"] = split_long_script_scenes(repaired_data["scenes"])
+                    if repaired_data["scenes"]:
+                        repaired_data["hook"] = repaired_data["scenes"][0].get("narration", repaired_data.get("hook", ""))
+
+                # Code computes duration_hint_s on repaired data as well
+                if isinstance(repaired_data, dict) and isinstance(repaired_data.get("scenes"), list):
+                    for s in repaired_data["scenes"]:
+                        if isinstance(s, dict):
+                            s["duration_hint_s"] = compute_scene_duration(s.get("narration", ""))
 
                 # Guarantee character description on repaired data as well
                 if mode == "character" and character_desc and isinstance(repaired_data, dict):

@@ -203,3 +203,45 @@
 4. **Vertical Visual Stacking**:
    - In `script` mode scene 3, the model suggested a horizontal "split screen graphic". Prompt should emphasize vertical split / stacked compositions for 9:16 mobile screens.
 
+## Step 4: Fixes from Real Run Evaluation (Prompt 4)
+
+### 1. Model Override Removal (Contract Alignment)
+- Completely deleted `ContentAgent._resolve_llm_overrides` and removed all references to `LLM_MODEL` and `LLM_BACKUP_MODEL` from `agents/content/`.
+- Model selection comes strictly from `config/agents.yaml` via `core.llm`.
+- Offline unit tests interface seamlessly with `FakeLLM` via standard `core.testing` registry.
+
+### 2. Algorithmic Speech Timing & Durations
+- Code computes each scene's `duration_hint_s` deterministically from its narration words:
+  $$\text{duration\_hint\_s} = \text{clamp}\left(3.0,\, 8.0,\, \text{round\_up\_0.5}\left(\frac{\text{words}}{2.5} + 0.5\right)\right)$$
+  Model-provided numbers are ignored and overwritten.
+- **Over-length Narration Handling (> 8.0s)**:
+  - In `generate` and `character` modes: Validation triggers a repair call asking the LLM to shorten or split the scene (max ~18–20 words per scene).
+  - In `script` mode: Code automatically splits the scene at the nearest sentence or clause boundary (`. `, `! `, `? `, `, `, `; `, `-- `), preserving 100% verbatim word-for-word fidelity.
+- **Duration Constraints**:
+  - `generate` and `character`: 30.0s–60.0s total duration and 4–8 scenes strictly enforced.
+  - `script`: No minimum duration constraint; duration follows the script naturally. Capped at 8 scenes (maximum 64s).
+- Prompts instruct the model to write max ~18 words per scene.
+
+### 3. Video Mode Grounding & Single Instagram Caption
+- Prompt updated with strict grounding rule: Use ONLY facts, features, and details explicitly provided in the topic/description. Never invent features, numbers, or claims.
+- In `sanitize_and_finalize_plan()`, `platform_text.instagram.caption` is generated as `caption + "\n\n" + hashtags` across EVERY mode, ensuring caption body and Instagram caption never diverge.
+
+### 4. AI-Native Visual Prompts & Style Suffix
+- Prompt rules explicitly disallow readable on-screen text, subtitles, letters, brand logos, and horizontal split-screen layouts, enforcing a single centered subject in a 9:16 vertical frame.
+- Added `settings.VISUAL_PROMPT_STYLE_SUFFIX = "Vertical 9:16 frame, subject centered, no on-screen text."`
+- Code automatically ensures the suffix is present on every scene's `visual_prompt` without duplicating.
+
+### 5. Brand Identity Setting & Case Normalization
+- Defined `settings.BRAND_NAME = "StreamOvate"` and `settings.BRAND_HANDLE = "@streamovate"`.
+- Code normalizes case-insensitive `"streamovate"` to `"StreamOvate"` across title, hook, narration, caption, and descriptions, while strictly preserving `"@streamovate"` handle and `"#streamovate"` hashtags.
+
+### 6. Real Re-Run Status
+- Checked `origin/main:config/agents.yaml`. The content agent entry remains configured with deprecated/exhausted models (`gemini-2.5-flash` / `gemini-2.5-flash-lite`).
+- **Verdict**: Real re-run pending core model config fix.
+
+### 7. Test Suite Verification
+- **Content Agent Suite (`tests/agents/content/`)**: **25 passed, 0 failed** in 1.43s.
+- **Integration Suite (`tests/agents/content` + `tests/test_insight_collector.py`)**: **38 passed, 1 failed (pre-existing)** in 22.84s.
+- All new Prompt 4 requirements verified with dedicated unit tests.
+
+
