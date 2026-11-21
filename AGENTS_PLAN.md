@@ -212,3 +212,28 @@ Before committing any agent step:
 1. All agent unit tests in `tests/agents/<name>/` must pass.
 2. The core platform tests in `tests/core/` must pass.
 3. The existing 296 legacy & insight tests must remain unaffected and pass.
+
+---
+
+## 6. Multi-Agent Decision & Context Log
+
+### QC Agent Decisions & Contract (Merged at `ad56760`)
+- **Report Contract**: `qc/report.json = {passed, checks[{name, passed, severity: blocker|warn, detail}], ai_review{enabled, model, suggestions[{area, suggestion}], error}}`.
+- **Run Halting**: `passed=false` triggers status `"failed"` and halts the pipeline before human review (`PENDING_APPROVAL`).
+- **Critic Behavior**: Advisory only (suggestions for next run, never alters `passed` or check statuses, disabled by default via `settings.ENABLE_AI_CRITIC=False`).
+- **Platform Rules & Severities**:
+  - **Blockers (Platform Hard Limits)**:
+    - Instagram: Duration 3s–15min, File size ≤300 MB, Caption ≤2,200 chars, Hashtags ≤5, Codecs H.264/HEVC, FPS 23–60, Faststart (`moov` atom at front).
+    - YouTube Shorts: Duration ≤180s (3 min), Title 1–100 chars, Description ≤5,000 chars.
+    - Strictest selected platform rules win.
+  - **Warnings (Target / Editorial Goals)**: Target duration 15–90s, Target hashtags ≥3, Hook first line ≤125 chars.
+  - **Existing-Video Mode (`spec.mode == "video"`)**: Narration and scene timing coverage checks skipped (`passed=True`); subtitle missing/corrupt demoted to `severity="warn"`; faststart missing demoted to `severity="warn"`.
+
+### Open Items & Cross-Agent Directives
+1. **QC Critic Live Verification (`config/agents.yaml`)**:
+   - Backup `gemini-2.5-flash-lite` returns 404 (Google API recommends `gemini-3.5-flash-lite`); primary model also failed in live test run. Critic is advisory and unblocked for now, but live model calls must be tested and proven during pipeline wiring.
+2. **Sync & Merge Directive**:
+   - Sync & Merge **must** encode the final video with `-movflags +faststart` so that normal-mode QC passes without faststart blocker failures.
+3. **Posting & Approval Screen Contract**:
+   - Approval UI and Posting agent must parse `ai_review.suggestions` as an array of structured objects (`[{"area": str, "suggestion": str}]`), not as a plain string.
+
